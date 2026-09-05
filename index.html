@@ -415,10 +415,10 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.2.3";
+var VER="v0.2.4";
 var E=B360E;
 function $(s){return document.querySelector(s)}
-var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",camLog:"",camPick:{},cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1}};
@@ -507,7 +507,7 @@ function cldUpload(file,kind,fields,onProg){
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
   $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";
-  $("#camInfo").textContent=S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.";
+  $("#camInfo").textContent=(S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.")+(S.camLog?("  ·  Denenen: "+S.camLog):"");
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
   fs.value=String(S.sure);
   $("#fCld").value=S.cldName;$("#fPreset").value=S.cldPreset;$("#fQr").value=S.qrMod;
@@ -620,27 +620,66 @@ $("#fxFile").addEventListener("change",function(){
 /* ---------- KAYIT ---------- */
 var stream=null,rec=null,chunks=[],recTimer=null,lastBlobUrl="";
 $("#startBtn").onclick=function(){beginRec()};
+function camCands(fm,wide){
+  var fr={ideal:60};
+  if(!wide)return [{video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:fr},audio:false}];
+  /* geniş kadraj: sensörün 4:3 modu. iOS bazı isteklerde kareyi yatay verir; adaylar sırayla denenir, DİKEY ve en geniş olan seçilir */
+  return [
+    {video:{facingMode:fm,width:{ideal:1440},height:{ideal:1920},frameRate:fr},audio:false},
+    {video:{facingMode:fm,width:{ideal:1920},height:{ideal:1440},frameRate:fr},audio:false},
+    {video:{facingMode:fm,aspectRatio:{ideal:0.75},height:{ideal:1920},frameRate:fr},audio:false},
+    {video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:fr},audio:false}
+  ];
+}
+/* akışı aç, gerçek kare ölçüsünü oku (dikey mi, ne kadar geniş) */
+function probeStream(cs){
+  return navigator.mediaDevices.getUserMedia(cs).then(function(st){
+    return new Promise(function(res){
+      var v=$("#cam"),done=false,tr=st.getVideoTracks()[0];
+      function fin(){if(done)return;done=true;var w=v.videoWidth||0,h=v.videoHeight||0,sg={};try{sg=tr.getSettings()||{}}catch(e){}
+        res({st:st,tr:tr,w:w,h:h,fps:Math.round(sg.frameRate||0),sw:sg.width||0,sh:sg.height||0})}
+      v.onloadedmetadata=function(){setTimeout(fin,120)};
+      v.srcObject=st;v.play&&v.play().catch(function(){});
+      setTimeout(fin,1800);
+    });
+  });
+}
 function beginRec(){
   go("rec");
   $("#count").textContent="";$("#recBadge").style.display="none";
   var fm=(S.kamera==="environment")?"environment":"user",wide=(S.kadraj!=="standart");
-  /* geniş kadraj: sensörün 4:3 modu (dikeyde 3:4) — ön kamerada 16:9 modu kırpık/yakın gelir */
-  var cs={video:{facingMode:fm,width:{ideal:wide?1440:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
   $("#cam").classList.toggle("mirror",fm==="user"); /* ön kamera önizlemesi ayna gibi; kayıt aynalanmaz */
-  $("#cam").style.objectFit=wide?"contain":"cover";
-  navigator.mediaDevices.getUserMedia(cs).then(function(st){
-    stream=st;$("#cam").srcObject=st;
-    var tr=st.getVideoTracks()[0];
-    try{var cap=tr.getCapabilities&&tr.getCapabilities();if(cap&&cap.zoom&&typeof cap.zoom.min==="number")tr.applyConstraints({advanced:[{zoom:cap.zoom.min}]}).catch(function(){})}catch(e){}
-    try{setTimeout(function(){var s=tr.getSettings();window.B360.cam=s;S.lastCam=(s.width||"?")+"×"+(s.height||"?")+" @"+Math.round(s.frameRate||0)+"fps"+(s.zoom?" zoom "+s.zoom:"");save()},800)}catch(e){}
+  $("#cam").style.objectFit="cover"; /* önizleme tam ekran */
+  var cands=camCands(fm,wide),key=fm+"|"+(wide?"w":"s"),log=[],best=null,i=0;
+  var pick=(S.camPick&&S.camPick[key]);
+  if(typeof pick==="number"&&pick>=0&&pick<cands.length){cands=[cands[pick]].concat(cands.filter(function(_,j){return j!==pick}))}
+  function stopIt(r){try{r.st.getTracks().forEach(function(t){t.stop()})}catch(e){}}
+  function finish(r){
+    stream=r.st;$("#cam").srcObject=r.st;
+    try{var cap=r.tr.getCapabilities&&r.tr.getCapabilities();if(cap&&cap.zoom&&typeof cap.zoom.min==="number")r.tr.applyConstraints({advanced:[{zoom:cap.zoom.min}]}).catch(function(){})}catch(e){}
+    window.B360.cam={w:r.w,h:r.h,fps:r.fps,cand:r.ci};
+    S.lastCam=r.w+"×"+r.h+" @"+r.fps+"fps (aday "+(r.ci+1)+", "+(r.w<r.h?"dikey":"YATAY")+")";
+    S.camLog=log.join(" | ");S.camPick=S.camPick||{};S.camPick[key]=r.ci;save();
     countdown(3);
-  }).catch(function(){
-    navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(st){
-      stream=st;$("#cam").srcObject=st;countdown(3);
-    }).catch(function(){
-      alert("Kameraya erişilemedi. Safari'de kamera iznini kontrol et.");go("attract");
-    });
-  });
+  }
+  function next(){
+    if(i>=cands.length){
+      if(best){finish(best);return}
+      navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(st){stream=st;$("#cam").srcObject=st;S.lastCam="genel kamera";save();countdown(3)})
+        .catch(function(){alert("Kameraya erişilemedi. Safari'de kamera iznini kontrol et.");go("attract")});
+      return;
+    }
+    var cs=cands[i],ci=i;i++;
+    probeStream(cs).then(function(r){
+      r.ci=ci;log.push((ci+1)+": "+r.w+"×"+r.h+" @"+r.fps);
+      var portrait=r.w&&r.h&&r.h>r.w,ratio=r.w&&r.h?r.w/r.h:0;
+      if(!wide){finish(r);return}
+      if(portrait&&ratio>=0.7){finish(r);return}          /* dikey ve geniş (3:4) → istediğimiz */
+      if(portrait&&(!best||ratio>best.w/best.h)){if(best)stopIt(best);best=r}else stopIt(r); /* dikey ama dar: yedek */
+      next();
+    }).catch(function(e){log.push((ci+1)+": hata");next()});
+  }
+  next();
 }
 function countdown(n){
   if(n>0){$("#count").textContent=n;setTimeout(function(){countdown(n-1)},1000);return}
