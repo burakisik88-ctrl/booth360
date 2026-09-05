@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12100E">
+<title>OBSKURA 360 — videon</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;600;800&display=swap">
+<style>
+:root{--ink:#12100E;--ink2:#1B1714;--line:rgba(243,237,228,.14);--line2:rgba(243,237,228,.3);--paper:#F6F0E6;--text:#F3EDE4;--muted:#A79688;--amber:#F2A93B;
+  --disp:"Instrument Serif",Georgia,serif;--ui:"Figtree",-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;min-height:100%;background:var(--ink);color:var(--text);font-family:var(--ui)}
+.wrap{max-width:460px;margin:0 auto;padding:22px 18px 40px;text-align:center}
+.eyebrow{font-family:var(--disp);letter-spacing:.34em;font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+h1{font-family:var(--disp);font-style:italic;font-weight:400;font-size:34px;margin:0 0 14px;color:var(--paper)}
+h1 em{color:var(--amber);font-style:italic}
+#vw{position:relative;width:min(340px,86vw);aspect-ratio:9/16;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}
+#vid{width:100%;height:100%;object-fit:cover;background:#000}
+#busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,7,.75);padding:16px;color:var(--muted);font-size:14px;line-height:1.5}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:sp 1s linear infinite;margin:0 auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:58px;padding:0 26px;border:none;border-radius:999px;font-family:var(--ui);font-weight:600;font-size:16px;letter-spacing:.04em;background:var(--amber);color:#1A1206;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line2)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6;margin-top:14px}
+.hint b{color:var(--text)}
+footer{margin-top:28px;font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--muted);text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OBSKURA 360</div>
+  <h1>Etrafında <em>dönen</em> anın</h1>
+  <div id="vw"><video id="vid" controls playsinline loop></video><div id="busy"><div class="spin"></div><div id="bmsg">Videon hazırlanıyor…</div></div></div>
+  <div class="row">
+    <button class="btn" id="saveBtn" disabled>Videoyu kaydet / paylaş</button>
+    <a class="btn ghost" id="openBtn" href="#" target="_blank" rel="noopener">Videoyu aç</a>
+  </div>
+  <div class="hint" id="hint">Kaydet'e dokun → <b>Videoyu Kaydet</b> seç, galerine iner. Instagram'da Reels ya da Story olarak paylaşabilirsin (9:16).</div>
+  <footer>Anı burada döner</footer>
+</div>
+<script>
+/* OBSKURA 360 — Şablon Motoru v0.2 (index.html ve v.html'e aynen gömülür)
+   Şablon = hız eğrisi (segmentler) + FX katmanı + renk + logo + müzik.
+   Motor, şablonu Cloudinary dönüşüm zincirine çevirir; ileride FFmpeg'e de çevrilebilir. */
+var B360E=(function(){
+"use strict";
+function r2(x){return Math.round(x*100)/100}
+function lid(p){return String(p).replace(/\//g,":")}
+var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,tol:25};
+var POS={ne:"g_north_east,x_0.04,y_0.03",nw:"g_north_west,x_0.04,y_0.03",se:"g_south_east,x_0.04,y_0.04",sw:"g_south_west,x_0.04,y_0.04",s:"g_south,y_0.04",n:"g_north,y_0.03"};
+
+/* ---- ŞABLONLAR ----
+   w(D,F): D=kaynak süresi (sn), F=yüz anı (sn). Segment: {s,e,r,dbl,x}
+   r = e_accelerate (-50 yarı hız … 100 iki kat), dbl=1 → ikinci -50 (¼×), x: "rev" | "flash" | "zoom" */
+var TEMPLATES=[
+ {id:"yildiz",n:"Yıldız Yağmuru",e:"✨",d:"Yavaş giriş, hızlı tur, yüzünde ağır çekim — yıldızlar yağar",fx:"yildiz",grade:"e_saturation:15/e_contrast:6",
+  w:function(D,F){return[{s:0,e:1.5,r:-50},{s:1.5,e:F-0.7,r:100},{s:F-0.7,e:F+0.9,r:-50,dbl:1},{s:F+0.9,e:D-2,r:100},{s:D-2,e:D,r:-50}]}},
+ {id:"kalp",n:"Kalp Kalbe",e:"💗",d:"Yumuşak giriş, yüzünde kalpler ve ağır çekim, hızlı çıkış",fx:"kalp",grade:"e_saturation:10/e_brightness:4",
+  w:function(D,F){return[{s:0,e:2,r:-50},{s:2,e:F-0.8,r:0},{s:F-0.8,e:F+1,r:-50,dbl:1},{s:F+1,e:D,r:100}]}},
+ {id:"konfeti",n:"Konfeti Patlaması",e:"🎉",d:"Hızlı giriş, flaş, ağır çekim vurgu, geri sarımlı final",fx:"konfeti",grade:"e_saturation:25/e_contrast:8",
+  w:function(D,F){return[{s:0,e:F-1,r:60},{s:F-1,e:F-0.88,r:0,x:"flash"},{s:F-0.88,e:F+1,r:-50},{s:F+1,e:D,r:60},{s:D-3,e:D,r:100,x:"rev"}]}},
+ {id:"noir",n:"Sinema Noir",e:"🎩",d:"Siyah-beyaz, uzun ağır çekim yüz anı, hızlı tur, yavaş kapanış",fx:"",grade:"e_grayscale/e_contrast:18",noise:10,
+  w:function(D,F){return[{s:0,e:F-1.2,r:0},{s:F-1.2,e:F+1.4,r:-50},{s:F+1.4,e:D-2,r:100},{s:D-2,e:D,r:-50}]}},
+ {id:"geri",n:"Geri Sarım Pro",e:"⏪",d:"Hızlı tur, yüzünde ağır çekim, bütün tur tersten, son bir yüz anı",fx:"sparkle",grade:"e_saturation:30/e_contrast:10",
+  w:function(D,F){return[{s:0,e:F-0.6,r:100},{s:F-0.6,e:F+0.8,r:-50},{s:F+0.8,e:D,r:100},{s:0,e:D,r:100,x:"rev"},{s:F-0.6,e:F+0.8,r:-50,free:1}]}},
+ {id:"kulup",n:"Kulüp",e:"🪩",d:"Zoom vuruşları, ¼× yüz anı, strobe flaşlar, hızlı çıkış",fx:"sparkle",grade:"e_contrast:20/e_saturation:20",
+  w:function(D,F){var a=[],t=0,i;
+    for(i=0;i<3&&t+2.4<F-0.5;i++){a.push({s:t,e:t+1.8,r:60});a.push({s:t+1.8,e:t+2.4,r:60,x:"zoom"});t+=2.4}
+    a.push({s:t,e:F-0.5,r:60});a.push({s:F-0.5,e:F+0.7,r:-50,dbl:1});
+    t=F+0.7;for(i=0;i<2;i++){a.push({s:t,e:t+0.1,r:0,x:"flash"});a.push({s:t+0.1,e:t+0.5,r:100});t+=0.5}
+    a.push({s:t,e:D,r:100});return a}}
+];
+function byId(id){for(var i=0;i<TEMPLATES.length;i++)if(TEMPLATES[i].id===id)return TEMPLATES[i];return TEMPLATES[0]}
+
+/* yüz anı: kol misafirin önünden başlar; yüz f0 + k*tur anlarında öne gelir */
+function facePick(D,f0,tur){
+  f0=+f0||0;tur=+tur||10;if(tur<2)tur=2;
+  var c=[],k=0,t;
+  while((t=f0+k*tur)<D&&k<50){c.push(t);k++}
+  var lo=Math.min(2.5,D*0.3),hi=D-2;
+  for(var i=0;i<c.length;i++)if(c[i]>=lo&&c[i]<=hi)return r2(c[i]);
+  for(i=0;i<c.length;i++)if(c[i]>1.5&&c[i]<D-1.5)return r2(c[i]);
+  return r2(D/2);
+}
+/* segmentleri kırp, sırala, boşluk bırakma (ters segmentler ayrı sayılır) */
+function norm(ws,D){
+  var out=[],prevEnd=0;
+  for(var i=0;i<ws.length;i++){
+    var w=ws[i],s=Math.max(0,Math.min(D,+w.s)),e=Math.max(0,Math.min(D,+w.e));
+    if(w.x==="rev"||w.free){ /* ters/tekrar parçalar akış sırasına bağlı değil */
+      if(e-s>=0.3)out.push({s:r2(s),e:r2(e),r:w.r||0,dbl:w.dbl?1:0,x:w.x||""});
+      continue;
+    }
+    if(s<prevEnd)s=prevEnd;
+    if(e-s<0.08)continue;
+    out.push({s:r2(s),e:r2(e),r:w.r||0,dbl:w.dbl?1:0,x:w.x||""});
+    prevEnd=e;
+  }
+  return out;
+}
+function fac(sg,o){var f=1+(sg.r||0)/100;if(sg.dbl&&o.dbl)f*=0.5;return f}
+function outDur(segs,o){var t=0;for(var i=0;i<segs.length;i++)t+=(segs[i].e-segs[i].s)/fac(segs[i],o);return r2(t)}
+function segComps(sg,o,idx){
+  var c=[],base="so_"+r2(sg.s)+",eo_"+r2(sg.e);
+  if(sg.r)base+=",e_accelerate:"+sg.r;
+  c.push(base);
+  if(sg.x==="rev")c.push("e_reverse");
+  if(sg.x==="flash"&&o.flash)c.push("e_brightness:90");
+  if(sg.dbl&&o.dbl)c.push("e_accelerate:-50");
+  if(sg.x==="zoom"&&o.zoom&&idx>0){c.push("c_crop,w_0.85,h_0.85,g_center");c.push("c_scale,w_1.0,h_1.0,fl_relative")}
+  return c;
+}
+function flagsOf(spec){var o=Object.assign({},DEFO);if(spec.o)Object.keys(spec.o).forEach(function(k){o[k]=spec.o[k]});return o}
+function plan(spec){
+  var tpl=byId(spec.t),o=flagsOf(spec),D=+spec.d||15;if(D<3)D=3;
+  var F=facePick(D,spec.f,spec.r),segs=norm(tpl.w(D,F),D);
+  return {tpl:tpl,o:o,D:D,F:F,segs:segs,out:outDur(segs,o)};
+}
+function chain(spec){
+  var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
+  P.segs.forEach(function(sg,i){
+    var cs=segComps(sg,o,i);
+    if(i===0)parts=parts.concat(cs);
+    else{cs[0]="l_video:"+L+","+cs[0];parts=parts.concat(cs);parts.push("fl_splice,fl_layer_apply")}
+  });
+  var du=o.du?(",du_"+r2(P.out+0.5)):"";
+  if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
+    var fp=lid(spec.fp||"booth360/_fx");
+    if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
+    else{parts.push("l_video:"+fp+":"+tpl.fx+du);parts.push("c_scale,w_1.0,fl_relative");parts.push("e_make_transparent:"+(o.tol||25)+",co_rgb:00ff00")}
+    parts.push("fl_layer_apply");
+  }
+  if(tpl.grade)parts.push(tpl.grade);
+  if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
+  if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  if(o.music&&spec.m){parts.push("l_video:"+lid(spec.m)+du);parts.push("fl_layer_apply")}
+  parts.push("q_auto");
+  return parts.join("/");
+}
+function url(spec){
+  return "https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/"+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
+}
+/* misafir kartı için hız şeridi: [{w:oran,k:slow|mid|fast,rev,flash}] */
+function bar(spec){
+  var P=plan(spec),tot=P.out||1,a=[];
+  P.segs.forEach(function(sg){var f=fac(sg,P.o),d=(sg.e-sg.s)/f;
+    a.push({w:d/tot,k:f<0.6?"slow":(f>1.2?"fast":"mid"),rev:sg.x==="rev",flash:sg.x==="flash"})});
+  return a;
+}
+/* QR sayfası için kısa kodlama */
+var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
+function encode(spec){
+  var q=new URLSearchParams();
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
+  q.set("o",s);q.set("tl",String(o.tol||25));
+  return q.toString();
+}
+function decode(str){
+  var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
+  o.tol=+(q.get("tl")||25);spec.o=o;
+  return spec;
+}
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid};
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var E=B360E;
+function $(s){return document.querySelector(s)}
+var spec=E.decode(location.hash),url="";
+try{url=(spec.p&&spec.t)?E.url(spec):""}catch(e){url=""}
+var vid=$("#vid"),busy=$("#busy"),bmsg=$("#bmsg"),saveBtn=$("#saveBtn"),openBtn=$("#openBtn");
+if(!url){bmsg.textContent="Bağlantı eksik — karekodu yeniden okut.";openBtn.style.display="none";}
+else{
+  openBtn.href=url;
+  ready(url,function(n,sec){bmsg.textContent="Videon hazırlanıyor… "+sec+" sn"+(sec>=20?" (ilk hazırlık 30–60 sn sürebilir)":"")}).then(function(){
+    vid.onloadeddata=function(){busy.style.display="none";saveBtn.disabled=false};
+    vid.onerror=function(){bmsg.textContent="Video oynatılamadı. 'Videoyu aç' ile dene."};
+    vid.src=url;
+  }).catch(function(e){bmsg.textContent="Video hazırlanamadı ("+((e&&e.message)||"hata")+"). Görevliye söyle, yeniden çekelim."});
+}
+function ready(u,onStat){
+  return new Promise(function(res,rej){
+    var t0=Date.now(),n=0;
+    (function tick(){
+      n++;if(onStat)onStat(n,Math.round((Date.now()-t0)/1000));
+      var p;try{p=fetch(u,{method:"HEAD",cache:"no-store"})}catch(e){p=Promise.reject(e)}
+      p.then(function(r){
+        if(r.status===200||r.status===206){res(r);return}
+        if(r.status===423||r.status===425||r.status===429||r.status>=500){retry();return}
+        rej(new Error("HTTP "+r.status));
+      }).catch(function(){retry()});
+      function retry(){if(Date.now()-t0>180000){rej(new Error("zaman aşımı"));return}setTimeout(tick,n<3?1500:3000)}
+    })();
+  });
+}
+saveBtn.onclick=function(){
+  saveBtn.disabled=true;var old=saveBtn.textContent;saveBtn.textContent="İndiriliyor…";
+  fetch(url).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.blob()}).then(function(b){
+    var f=new File([b],"obskura360.mp4",{type:"video/mp4"});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:"OBSKURA 360"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="obskura360.mp4";document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
+  }).catch(function(){window.open(url,"_blank")}).then(function(){saveBtn.disabled=false;saveBtn.textContent=old});
+};
+window.B360V={spec:spec,url:url};
+})();
+</script>
+</body>
+</html>
