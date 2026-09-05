@@ -195,6 +195,9 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         <div class="fld"><div class="lbl">Kamera</div>
           <select id="fKam"><option value="user">Ön kamera (ekran misafire bakar)</option><option value="environment">Arka kamera</option></select></div>
       </div>
+      <div class="fld"><div class="lbl">Kadraj</div>
+        <select id="fKadraj"><option value="genis916">En geniş açı → 9:16, kenarlar bulanık (önerilen)</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select></div>
+      <div class="note" id="camInfo"></div>
     </div>
     <div class="grp">
       <h3>Şablonlar</h3>
@@ -366,6 +369,7 @@ function chain(spec){
     else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
+  if(spec.k==="g916")parts.push("c_pad,w_1080,h_1920,b_blurred:400:15"); /* geniş (3:4) kaynak → 9:16, kenarlar bulanık — canlıda doğrulandı */
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
     var fp=lid(spec.fp||"booth360/_fx");
     if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
@@ -393,14 +397,14 @@ function bar(spec){
 var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
   var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
   q.set("o",s);q.set("tl",String(o.tol||25));
   return q.toString();
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
   var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
@@ -411,10 +415,10 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.2.2";
+var VER="v0.2.3";
 var E=B360E;
 function $(s){return document.querySelector(s)}
-var DEF={evt:"",sure:15,kamera:"user",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1}};
@@ -502,7 +506,8 @@ function cldUpload(file,kind,fields,onProg){
 
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
-  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";
+  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";
+  $("#camInfo").textContent=S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.";
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
   fs.value=String(S.sure);
   $("#fCld").value=S.cldName;$("#fPreset").value=S.cldPreset;$("#fQr").value=S.qrMod;
@@ -518,6 +523,7 @@ function fillAdmin(){
 $("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
 $("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
+$("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save()});
 $("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
 $("#fPreset").addEventListener("input",function(){S.cldPreset=this.value.trim();save()});
 $("#fQr").addEventListener("change",function(){S.qrMod=this.value;save()});
@@ -617,12 +623,16 @@ $("#startBtn").onclick=function(){beginRec()};
 function beginRec(){
   go("rec");
   $("#count").textContent="";$("#recBadge").style.display="none";
-  var fm=(S.kamera==="environment")?"environment":"user";
-  var cs={video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
+  var fm=(S.kamera==="environment")?"environment":"user",wide=(S.kadraj!=="standart");
+  /* geniş kadraj: sensörün 4:3 modu (dikeyde 3:4) — ön kamerada 16:9 modu kırpık/yakın gelir */
+  var cs={video:{facingMode:fm,width:{ideal:wide?1440:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
   $("#cam").classList.toggle("mirror",fm==="user"); /* ön kamera önizlemesi ayna gibi; kayıt aynalanmaz */
+  $("#cam").style.objectFit=wide?"contain":"cover";
   navigator.mediaDevices.getUserMedia(cs).then(function(st){
     stream=st;$("#cam").srcObject=st;
-    try{var s=st.getVideoTracks()[0].getSettings();window.B360.cam=s}catch(e){}
+    var tr=st.getVideoTracks()[0];
+    try{var cap=tr.getCapabilities&&tr.getCapabilities();if(cap&&cap.zoom&&typeof cap.zoom.min==="number")tr.applyConstraints({advanced:[{zoom:cap.zoom.min}]}).catch(function(){})}catch(e){}
+    try{setTimeout(function(){var s=tr.getSettings();window.B360.cam=s;S.lastCam=(s.width||"?")+"×"+(s.height||"?")+" @"+Math.round(s.frameRate||0)+"fps"+(s.zoom?" zoom "+s.zoom:"");save()},800)}catch(e){}
     countdown(3);
   }).catch(function(){
     navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(st){
@@ -692,7 +702,7 @@ function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
   return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
-    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,o:Object.assign({},S.flags,{tol:S.fxTol})};
+    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:(S.kadraj==="genis916")?"g916":"",o:Object.assign({},S.flags,{tol:S.fxTol})};
 }
 /* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
 function fxProbe(cb){
