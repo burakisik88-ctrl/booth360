@@ -40,7 +40,7 @@ footer{margin-top:28px;font-family:var(--disp);letter-spacing:.3em;font-size:11p
     <button class="btn" id="saveBtn" disabled>Videoyu kaydet / paylaş</button>
     <a class="btn ghost" id="openBtn" href="#" target="_blank" rel="noopener">Videoyu aç</a>
   </div>
-  <div class="hint" id="hint">Kaydet'e dokun → <b>Videoyu Kaydet</b> seç, galerine iner. Instagram'da Reels ya da Story olarak paylaşabilirsin (9:16).</div>
+  <div class="hint" id="hint">Kaydet'e dokun → açılan paylaşım menüsünde <b>Videoyu Kaydet</b> seç, galerine iner. Instagram'da Reels ya da Story olarak paylaşabilirsin (9:16). Menü açılmazsa <b>Videoyu aç</b> → paylaş simgesi → Videoyu Kaydet.</div>
   <footer>Anı burada döner</footer>
 </div>
 <script>
@@ -126,7 +126,7 @@ function chain(spec){
   P.segs.forEach(function(sg,i){
     var cs=segComps(sg,o,i);
     if(i===0)parts=parts.concat(cs);
-    else{cs[0]="l_video:"+L+","+cs[0];parts=parts.concat(cs);parts.push("fl_splice,fl_layer_apply")}
+    else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
@@ -138,7 +138,7 @@ function chain(spec){
   if(tpl.grade)parts.push(tpl.grade);
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
   if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
-  if(o.music&&spec.m){parts.push("l_video:"+lid(spec.m)+du);parts.push("fl_layer_apply")}
+  if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
   return parts.join("/");
 }
@@ -183,10 +183,13 @@ if(!url){bmsg.textContent="Bağlantı eksik — karekodu yeniden okut.";openBtn.
 else{
   openBtn.href=url;
   ready(url,function(n,sec){bmsg.textContent="Videon hazırlanıyor… "+sec+" sn"+(sec>=20?" (ilk hazırlık 30–60 sn sürebilir)":"")}).then(function(){
-    vid.onloadeddata=function(){busy.style.display="none";saveBtn.disabled=false};
-    vid.onerror=function(){bmsg.textContent="Video oynatılamadı. 'Videoyu aç' ile dene."};
-    vid.src=url;
-  }).catch(function(e){bmsg.textContent="Video hazırlanamadı ("+((e&&e.message)||"hata")+"). Görevliye söyle, yeniden çekelim."});
+    /* iOS Safari, kullanıcı oynatana kadar veri yüklemez: spinner'ı hazır olur olmaz kaldır, kontrolleri aç */
+    var opened=false;function openIt(){if(opened)return;opened=true;busy.style.display="none";saveBtn.disabled=false}
+    vid.onloadedmetadata=openIt;vid.onloadeddata=openIt;
+    vid.onerror=function(){if(!opened){bmsg.textContent="Oynatıcı açılamadı — 'Videoyu aç' ile izle ya da Kaydet'e dokun.";saveBtn.disabled=false}};
+    vid.src=url;vid.load&&vid.load();
+    setTimeout(openIt,2500);
+  }).catch(function(e){bmsg.textContent="Video hazırlanamadı ("+((e&&e.message)||"hata")+"). Görevliye söyle, yeniden çekelim.";openBtn.style.display="inline-flex"});
 }
 function ready(u,onStat){
   return new Promise(function(res,rej){
@@ -204,13 +207,19 @@ function ready(u,onStat){
   });
 }
 saveBtn.onclick=function(){
-  saveBtn.disabled=true;var old=saveBtn.textContent;saveBtn.textContent="İndiriliyor…";
-  fetch(url).then(function(r){if(!r.ok)throw new Error("HTTP "+r.status);return r.blob()}).then(function(b){
+  saveBtn.disabled=true;var old=saveBtn.textContent;saveBtn.textContent="İndiriliyor… %0";
+  var ctrl=("AbortController" in window)?new AbortController():null,timer=setTimeout(function(){try{ctrl&&ctrl.abort()}catch(e){}},90000);
+  fetch(url,ctrl?{signal:ctrl.signal}:{}).then(function(r){
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    var total=+r.headers.get("content-length")||0;if(!r.body||!total)return r.blob();
+    var reader=r.body.getReader(),got=0,parts=[];
+    return reader.read().then(function step(x){if(x.done)return new Blob(parts,{type:"video/mp4"});parts.push(x.value);got+=x.value.length;saveBtn.textContent="İndiriliyor… %"+Math.min(99,Math.round(100*got/total));return reader.read().then(step)});
+  }).then(function(b){clearTimeout(timer);
     var f=new File([b],"obskura360.mp4",{type:"video/mp4"});
     if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:"OBSKURA 360"});
     var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="obskura360.mp4";document.body.appendChild(a);a.click();
     setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
-  }).catch(function(){window.open(url,"_blank")}).then(function(){saveBtn.disabled=false;saveBtn.textContent=old});
+  }).catch(function(){clearTimeout(timer);window.open(url,"_blank")}).then(function(){saveBtn.disabled=false;saveBtn.textContent=old});
 };
 window.B360V={spec:spec,url:url};
 })();

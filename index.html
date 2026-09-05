@@ -358,7 +358,7 @@ function chain(spec){
   P.segs.forEach(function(sg,i){
     var cs=segComps(sg,o,i);
     if(i===0)parts=parts.concat(cs);
-    else{cs[0]="l_video:"+L+","+cs[0];parts=parts.concat(cs);parts.push("fl_splice,fl_layer_apply")}
+    else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
@@ -370,7 +370,7 @@ function chain(spec){
   if(tpl.grade)parts.push(tpl.grade);
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
   if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
-  if(o.music&&spec.m){parts.push("l_video:"+lid(spec.m)+du);parts.push("fl_layer_apply")}
+  if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
   return parts.join("/");
 }
@@ -406,7 +406,7 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.2";
+var VER="v0.2.1";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -507,6 +507,7 @@ function fillAdmin(){
   $("#fkWarm").checked=!!S.warm;$("#fkDbl").checked=!!S.flags.dbl;$("#fkZoom").checked=!!S.flags.zoom;
   $("#fkFlash").checked=!!S.flags.flash;$("#fkNoise").checked=!!S.flags.noise;$("#fkDu").checked=!!S.flags.du;
   buildTplList();buildMuzikList();logoInfo();fxInfo();
+  fxProbe(function(ch){if(ch)fxInfo()});
   $("#verNote").textContent="OBSKURA 360 · "+VER+" · PIN 1234 · Videolar: booth360/"+evSlug()+" · İzleme sayfası: "+pageBase()+"v.html";
 }
 $("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
@@ -685,6 +686,15 @@ function mkSpec(tid,vid){
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
     x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,o:Object.assign({},S.flags,{tol:S.fxTol})};
 }
+/* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
+function fxProbe(cb){
+  var ids=["yildiz","kalp","konfeti","sparkle"],left=ids.length,ch=false;
+  ids.forEach(function(id){
+    var u="https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/video/upload/"+S.fxPath+"/"+id+".mp4";
+    fetch(u,{method:"HEAD",cache:"no-store"}).then(function(r){if(r.status===200&&!S.fxHave[id]){S.fxHave[id]=S.fxPath+"/"+id;ch=true}}).catch(function(){}).then(function(){if(--left===0){if(ch)save();if(cb)cb(ch)}});
+  });
+}
+try{fxProbe()}catch(e){}
 /* FX videosu yüklü değilse o şablon FX'siz kurulur (render kırılmasın) */
 function fxOk(tid){var t=E.byId(tid);if(!t.fx||S.fxMode==="off")return false;var key=S.fxMode==="alpha"?(t.fx+"_a"):t.fx;return !!(S.fxHave&&S.fxHave[key])}
 function tplUrl(tid,vid){var sp=mkSpec(tid,vid);return sp?E.url(sp):""}
@@ -738,9 +748,11 @@ function openPreview(t){
   v.removeAttribute("src");try{v.load()}catch(e){}
   ready(url,function(n,sec){if(tok!==prevTok)return;stat.textContent=sec+" sn"+(sec>=20?" · ilk hazırlık 30–60 sn sürebilir":"")}).then(function(){
     if(tok!==prevTok)return;
-    v.onloadeddata=function(){if(tok!==prevTok)return;busy.style.display="none";use.disabled=false};
-    v.onerror=function(){if(tok!==prevTok)return;busy.querySelector(".lede").textContent="Video oynatılamadı — başka şablon dene.";stat.textContent=""};
+    var opened=false;function openIt(){if(tok!==prevTok||opened)return;opened=true;busy.style.display="none";use.disabled=false}
+    v.onloadeddata=openIt;v.onloadedmetadata=openIt;
+    v.onerror=function(){if(tok!==prevTok||opened)return;busy.querySelector(".lede").textContent="Önizleme oynatılamadı — yine de kullanabilirsin.";stat.textContent="";use.disabled=false};
     v.src=url;v.play&&v.play().catch(function(){});
+    setTimeout(openIt,6000); /* iOS bazen veri yüklemez; hazır olan videoyu bekletme */
   }).catch(function(e){
     if(tok!==prevTok)return;
     busy.querySelector(".lede").textContent="Bu edit hazırlanamadı — başka şablon dene.";
