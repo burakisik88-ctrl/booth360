@@ -29,6 +29,7 @@ h1 em{color:var(--amber);font-style:italic}
 #gearBtn{position:fixed;right:14px;bottom:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(27,23,20,.5);color:var(--muted);font-size:20px;z-index:40;cursor:pointer}
 video{background:#000}
 #cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#cam.mirror{transform:scaleX(-1)}
 #recUi{position:relative;z-index:2}
 #count{font-family:var(--disp);font-size:clamp(120px,30vw,300px);color:var(--paper);text-shadow:0 8px 60px rgba(0,0,0,.6)}
 #recBadge{display:none;align-items:center;gap:10px;background:rgba(20,16,13,.72);border:1px solid var(--line);border-radius:999px;padding:12px 22px;font-weight:600}
@@ -188,8 +189,12 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
     <div class="grp">
       <h3>Etkinlik</h3>
       <div class="fld"><div class="lbl">Etkinlik adı</div><input type="text" id="fEvt"></div>
-      <div class="fld"><div class="lbl">Çekim süresi</div>
-        <select id="fSure"><option value="10">10 saniye</option><option value="15">15 saniye</option><option value="20">20 saniye</option></select></div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Çekim süresi</div>
+          <select id="fSure"><option value="10">10 saniye</option><option value="15">15 saniye</option><option value="20">20 saniye</option></select></div>
+        <div class="fld"><div class="lbl">Kamera</div>
+          <select id="fKam"><option value="user">Ön kamera (ekran misafire bakar)</option><option value="environment">Arka kamera</option></select></div>
+      </div>
     </div>
     <div class="grp">
       <h3>Şablonlar</h3>
@@ -406,10 +411,10 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.2.1";
+var VER="v0.2.2";
 var E=B360E;
 function $(s){return document.querySelector(s)}
-var DEF={evt:"",sure:15,cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+var DEF={evt:"",sure:15,kamera:"user",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1}};
@@ -497,7 +502,7 @@ function cldUpload(file,kind,fields,onProg){
 
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
-  $("#fEvt").value=S.evt;
+  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
   fs.value=String(S.sure);
   $("#fCld").value=S.cldName;$("#fPreset").value=S.cldPreset;$("#fQr").value=S.qrMod;
@@ -512,6 +517,7 @@ function fillAdmin(){
 }
 $("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
+$("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
 $("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
 $("#fPreset").addEventListener("input",function(){S.cldPreset=this.value.trim();save()});
 $("#fQr").addEventListener("change",function(){S.qrMod=this.value;save()});
@@ -611,7 +617,9 @@ $("#startBtn").onclick=function(){beginRec()};
 function beginRec(){
   go("rec");
   $("#count").textContent="";$("#recBadge").style.display="none";
-  var cs={video:{facingMode:"environment",width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
+  var fm=(S.kamera==="environment")?"environment":"user";
+  var cs={video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
+  $("#cam").classList.toggle("mirror",fm==="user"); /* ön kamera önizlemesi ayna gibi; kayıt aynalanmaz */
   navigator.mediaDevices.getUserMedia(cs).then(function(st){
     stream=st;$("#cam").srcObject=st;
     try{var s=st.getVideoTracks()[0].getSettings();window.B360.cam=s}catch(e){}
