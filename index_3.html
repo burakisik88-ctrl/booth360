@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12100E">
+<title>OBSKURA 360</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600;800&display=swap">
+<style>
+:root{--ink:#12100E;--ink2:#1B1714;--line:rgba(243,237,228,.14);--line2:rgba(243,237,228,.3);--paper:#F6F0E6;--text:#F3EDE4;--muted:#A79688;--amber:#F2A93B;--slow:#6FB7FF;--rev:#C77DFF;
+  --disp:"Instrument Serif",Georgia,serif;--ui:"Figtree",-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--text);font-family:var(--ui);overflow:hidden}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+.screen.on{display:flex}
+.eyebrow{font-family:var(--disp);letter-spacing:.34em;font-size:14px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+h1{font-family:var(--disp);font-style:italic;font-weight:400;font-size:clamp(34px,7vw,64px);margin:0 0 14px;color:var(--paper)}
+h1 em{color:var(--amber);font-style:italic}
+.lede{color:var(--muted);font-size:16px;line-height:1.6;max-width:520px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:70px;padding:0 36px;border:none;border-radius:999px;
+  font-family:var(--ui);font-weight:600;font-size:clamp(16px,2.6vw,20px);letter-spacing:.06em;background:var(--amber);color:#1A1206;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line2)}
+.btn.mini{min-height:46px;padding:0 16px;font-size:13px}
+.btn.lg{min-height:86px;font-size:clamp(18px,3vw,24px);width:min(460px,88vw)}
+.btn[disabled]{opacity:.45;cursor:default}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+#gearBtn{position:fixed;right:14px;bottom:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(27,23,20,.5);color:var(--muted);font-size:20px;z-index:40;cursor:pointer}
+video{background:#000}
+#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#recUi{position:relative;z-index:2}
+#count{font-family:var(--disp);font-size:clamp(120px,30vw,300px);color:var(--paper);text-shadow:0 8px 60px rgba(0,0,0,.6)}
+#recBadge{display:none;align-items:center;gap:10px;background:rgba(20,16,13,.72);border:1px solid var(--line);border-radius:999px;padding:12px 22px;font-weight:600}
+#recBadge i{width:14px;height:14px;border-radius:50%;background:#e5484d;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.25}}
+.spin{width:40px;height:40px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:sp 1s linear infinite;margin:0 auto 18px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bar{width:min(420px,80vw);height:6px;border-radius:99px;background:var(--ink2);overflow:hidden;margin-top:16px}
+.bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .2s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;width:min(760px,94vw);max-height:58vh;overflow:auto;padding:4px}
+.stcard{border:1px solid var(--line);border-radius:16px;background:var(--ink2);padding:16px 10px 12px;cursor:pointer;color:var(--text);text-align:center}
+.stcard .e{font-size:34px}
+.stcard .n{font-weight:800;margin:8px 0 4px}
+.stcard .d{font-size:12px;color:var(--muted);line-height:1.4;min-height:34px}
+.stcard .sb{display:flex;height:7px;border-radius:99px;overflow:hidden;margin:10px 4px 6px;background:var(--ink)}
+.stcard .sb i{display:block;height:100%}
+.stcard .sb i.slow{background:var(--slow)}.stcard .sb i.mid{background:var(--muted)}.stcard .sb i.fast{background:var(--amber)}
+.stcard .sb i.rev{background:var(--rev)}.stcard .sb i.flash{background:#fff}
+.stcard .t{font-size:11px;color:var(--muted);letter-spacing:.05em}
+.stcard.on{outline:2px solid var(--amber)}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:14px;justify-content:center}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:99px;vertical-align:middle;margin-right:5px}
+#prevWrap{position:relative;width:min(300px,62vw);aspect-ratio:9/16;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;margin:0 auto}
+#prevVid{width:100%;height:100%;object-fit:cover}
+#prevBusy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,7,.7);padding:14px}
+#prevStat{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;color:var(--text);background:transparent}
+.chip.on{background:var(--amber);color:#1A1206;border-color:var(--amber)}
+.qr{background:var(--paper);border-radius:18px;padding:16px;margin:14px 0}
+canvas#qrCanvas{display:block;width:min(300px,64vw);height:auto}
+.hint{color:var(--muted);font-size:13px;margin-top:12px}
+/* kalibrasyon */
+#calWrap{position:relative;width:min(260px,50vw);aspect-ratio:9/16;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;margin:0 auto 8px}
+#calVid{width:100%;height:100%;object-fit:cover}
+#calTime{position:absolute;left:10px;bottom:8px;font-family:var(--disp);font-size:22px;color:var(--paper);text-shadow:0 2px 10px #000}
+#calVals{font-size:15px;color:var(--text);margin-top:6px;line-height:1.7}
+#calVals b{color:var(--amber)}
+/* pin + admin */
+#pinDots{display:flex;gap:14px;margin:16px 0}
+#pinDots i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2)}
+#pinDots i.f{background:var(--amber);border-color:var(--amber)}
+#pinPad{display:grid;grid-template-columns:repeat(3,86px);gap:12px}
+#pinPad button{height:66px;border-radius:14px;border:1px solid var(--line);background:var(--ink2);color:var(--text);font-size:22px;font-weight:600;cursor:pointer}
+#s-admin{justify-content:flex-start;overflow:auto;text-align:left;align-items:stretch}
+.aw{width:min(680px,94vw);margin:0 auto;padding-bottom:60px}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.topbar .t{font-family:var(--disp);font-size:24px;color:var(--paper)}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text);font-size:17px;cursor:pointer}
+.grp{border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;background:rgba(27,23,20,.4)}
+.grp h3{margin:0 0 12px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.fld{margin-bottom:10px}
+.fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.05em}
+input[type=text],input[type=number],select{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px;font-family:var(--ui);font-size:15px}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+.note.ok{color:#8fd694}.note.err{color:#ff8a80}
+.mrow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:8px;flex-wrap:wrap}
+.mrow .nm{flex:1;font-size:14px;min-width:120px}
+.mrow select{width:auto;padding:8px 10px;font-size:13px}
+.ck{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 0}
+.ck input{width:22px;height:22px;accent-color:var(--amber)}
+footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--muted);text-transform:uppercase;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- ATTRACT -->
+<section class="screen on" id="s-attract">
+  <div class="eyebrow">OBSKURA 360</div>
+  <h1>Etrafında <em>dönen</em> an</h1>
+  <div class="lede" id="attractEvt"></div>
+  <div class="row"><button class="btn lg" id="startBtn">BAŞLAT</button></div>
+  <div class="hint">Misafir platforma çıksın, görevli BAŞLAT'a bassın.</div>
+</section>
+
+<!-- KAYIT -->
+<section class="screen" id="s-rec">
+  <video id="cam" autoplay muted playsinline></video>
+  <div id="recUi">
+    <div id="count"></div>
+    <div id="recBadge"><i></i><span id="recLeft"></span></div>
+  </div>
+</section>
+
+<!-- YÜKLEME -->
+<section class="screen" id="s-upload">
+  <div class="spin"></div>
+  <h1>Video <em>hazırlanıyor</em></h1>
+  <div class="lede" id="upNote">Yükleniyor…</div>
+  <div class="bar"><i id="upBar"></i></div>
+</section>
+
+<!-- ŞABLON SEÇ -->
+<section class="screen" id="s-style">
+  <div class="eyebrow">Son Dokunuş</div>
+  <h1 id="styleTitle">Şablonunu <em>seç</em></h1>
+  <div class="grid" id="styleGrid"></div>
+  <div class="legend"><span><b style="background:var(--slow)"></b>ağır çekim</span><span><b style="background:var(--muted)"></b>normal</span><span><b style="background:var(--amber)"></b>hızlı</span><span><b style="background:var(--rev)"></b>geri</span></div>
+  <div class="row">
+    <button class="chip" id="muzikChip" hidden>🎵 Müzik</button>
+    <button class="btn ghost mini" id="yenidenBtn">Yeniden çek</button>
+  </div>
+</section>
+
+<!-- ÖNİZLEME -->
+<section class="screen" id="s-prev">
+  <div class="eyebrow" id="prevName"></div>
+  <div id="prevWrap">
+    <video id="prevVid" autoplay muted loop playsinline></video>
+    <div id="prevBusy"><div class="spin"></div><div class="lede">Edit hazırlanıyor…</div><div id="prevStat"></div></div>
+  </div>
+  <div class="row">
+    <button class="btn" id="useBtn" disabled>Bunu kullan</button>
+    <button class="btn ghost" id="otherBtn">Başka şablon</button>
+  </div>
+</section>
+
+<!-- TESLİM -->
+<section class="screen" id="s-done">
+  <div class="eyebrow">Hazır</div>
+  <h1>Telefonuna <em>al</em></h1>
+  <div class="qr"><canvas id="qrCanvas" width="480" height="480"></canvas></div>
+  <div class="lede" id="doneNote">Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.</div>
+  <div class="row">
+    <button class="btn" id="againBtn">Yeni çekim</button>
+  </div>
+</section>
+
+<!-- KALİBRASYON -->
+<section class="screen" id="s-cal">
+  <div class="eyebrow">Tur & Yüz Anı Kalibrasyonu</div>
+  <div id="calWrap"><video id="calVid" muted loop playsinline></video><div id="calTime">0.0</div></div>
+  <div class="lede" style="font-size:14px">Video dönerken misafirin yüzü <b>tam kameraya baktığı an</b> düğmeye bas. İkinci kez tam öne geldiğinde bir daha bas — tur süresi kendiliğinden hesaplanır.</div>
+  <div id="calVals"></div>
+  <div class="row">
+    <button class="btn lg" id="calFace">YÜZ TAM ÖNDE</button>
+  </div>
+  <div class="row">
+    <button class="btn ghost mini" id="calReset">Baştan</button>
+    <button class="btn ghost mini" id="calSave">Kaydet ve kapat</button>
+    <button class="btn ghost mini" id="calCancel">Vazgeç</button>
+  </div>
+</section>
+
+<!-- PIN -->
+<section class="screen" id="s-pin">
+  <div class="eyebrow">Yönetici</div>
+  <div id="pinDots"><i></i><i></i><i></i><i></i></div>
+  <div id="pinPad"></div>
+  <div class="row"><button class="btn ghost mini" data-go="attract">Vazgeç</button></div>
+</section>
+
+<!-- ADMIN -->
+<section class="screen" id="s-admin">
+  <div class="aw">
+    <div class="topbar"><div class="t">OBSKURA 360 — Ayarlar</div><button class="iconbtn" data-go="attract">✕</button></div>
+    <div class="grp">
+      <h3>Etkinlik</h3>
+      <div class="fld"><div class="lbl">Etkinlik adı</div><input type="text" id="fEvt"></div>
+      <div class="fld"><div class="lbl">Çekim süresi</div>
+        <select id="fSure"><option value="10">10 saniye</option><option value="15">15 saniye</option><option value="20">20 saniye</option></select></div>
+    </div>
+    <div class="grp">
+      <h3>Şablonlar</h3>
+      <div id="tplList"></div>
+      <div class="note">İşaretli şablonlar misafir ekranında görünür; <b>ilk işaretli</b> şablon yüklemeden hemen sonra arka planda hazırlanır. Her şablona ayrı müzik seçebilirsin (boşsa "genel" müzik kullanılır). Az şablon = az bulut maliyeti.</div>
+    </div>
+    <div class="grp">
+      <h3>Tur & Yüz Anı</h3>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">1 tur süresi (sn)</div><input type="number" id="fTur" min="2" max="60" step="0.1"></div>
+        <div class="fld"><div class="lbl">İlk yüz anı (sn)</div><input type="number" id="fYuz" min="0" max="60" step="0.1"></div>
+      </div>
+      <div class="row" style="justify-content:flex-start;margin-top:4px">
+        <button class="btn ghost mini" id="calBtn">Kalibrasyon (son çekimle)</button>
+        <button class="btn ghost mini" id="calFileBtn">Video dosyasıyla</button>
+        <input type="file" id="calFile" accept="video/*" hidden>
+      </div>
+      <div class="note">Şablonlar ağır çekimi yüzün kameraya baktığı ana kilitler. Kol misafirin önünden başlıyorsa yüz anı 0'dır; sonraki yüz anları tur süresiyle bulunur.</div>
+    </div>
+    <div class="grp">
+      <h3>Logo</h3>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="logoBtn">Logo yükle (PNG)</button>
+        <input type="file" id="logoFile" accept="image/*" hidden>
+        <button class="btn ghost mini" id="logoDel">Kaldır</button>
+      </div>
+      <div class="note" id="logoInfo"></div>
+      <div class="fld2" style="margin-top:8px">
+        <div class="fld"><div class="lbl">Konum</div>
+          <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option></select></div>
+        <div class="fld"><div class="lbl">Boyut</div>
+          <select id="fLogoW"><option value="0.16">Küçük</option><option value="0.22">Orta</option><option value="0.30">Büyük</option></select></div>
+      </div>
+    </div>
+    <div class="grp">
+      <h3>Efekt Katmanı (FX)</h3>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Bindirme yöntemi</div>
+          <select id="fFx"><option value="green">Yeşil perde (önerilen)</option><option value="alpha">Alfa kanallı (deneme)</option><option value="off">Kapalı</option></select></div>
+        <div class="fld"><div class="lbl">Yeşil tolerans (0–100)</div><input type="number" id="fTol" min="0" max="100" step="1"></div>
+      </div>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="fxBtn">FX videolarını yükle</button>
+        <input type="file" id="fxFile" accept="video/*" multiple hidden>
+      </div>
+      <div class="note" id="fxInfo"></div>
+      <div class="note">Dosya adı efekt adıdır: <b>yildiz, kalp, konfeti, sparkle</b> (.mp4 yeşil zemin; alfa denemesi için <b>konfeti_a.webm</b>). Klasör: booth360/_fx</div>
+    </div>
+    <div class="grp">
+      <h3>Müzik</h3>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="muzikBtn">Müzik yükle (MP3)</button>
+        <input type="file" id="muzikFile" accept="audio/*" hidden>
+      </div>
+      <div id="muzikList"></div>
+      <div class="note">Telifsiz müzik kullan. "Genel" seçtiğin parça, kendi müziği olmayan şablonlarda çalar. Misafir ekranındaki 🎵 düğmesi müziği açıp kapatır.</div>
+    </div>
+    <div class="grp">
+      <h3>Dijital Teslim</h3>
+      <div class="fld"><div class="lbl">Cloudinary cloud name</div><input type="text" id="fCld"></div>
+      <div class="fld"><div class="lbl">Upload preset (unsigned)</div><input type="text" id="fPreset"></div>
+      <div class="fld"><div class="lbl">Karekod</div>
+        <select id="fQr"><option value="page">İzleme sayfası — izle, kaydet, paylaş (önerilen)</option><option value="mp4">Doğrudan MP4 bağlantısı</option></select></div>
+      <div class="note">Videolar <b>booth360/etkinlik-adı</b> klasörüne düşer. İzleme sayfası bu sitedeki <b>v.html</b>'dir.</div>
+    </div>
+    <div class="grp">
+      <h3>Gelişmiş</h3>
+      <label class="ck"><input type="checkbox" id="fkWarm"> Yüklemeden sonra ilk şablonu arka planda hazırla</label>
+      <label class="ck"><input type="checkbox" id="fkDbl"> ¼× ağır çekim (yüz anında iki kat yavaşlatma)</label>
+      <label class="ck"><input type="checkbox" id="fkZoom"> Zoom vuruşları (Kulüp)</label>
+      <label class="ck"><input type="checkbox" id="fkFlash"> Flaş kareleri</label>
+      <label class="ck"><input type="checkbox" id="fkNoise"> Film greni (Noir)</label>
+      <label class="ck"><input type="checkbox" id="fkDu"> FX ve müziği video süresine kırp (du_)</label>
+      <div class="note">Canlı testte hata veren özellik buradan kapatılır; yeni sürüm beklemeden devam edilir.</div>
+    </div>
+    <div class="note" id="verNote"></div>
+  </div>
+</section>
+
+<button id="gearBtn">⚙</button>
+<footer class="tag">Anı burada döner</footer>
+
+<script>
+var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],f={},c=function(t,r){o=function(t){for(var r=new Array(t),e=0;e<t;e+=1){r[e]=new Array(t);for(var n=0;n<t;n+=1)r[e][n]=null}return r}(i=4*e+17),l(0,0),l(i-7,0),l(0,i-7),s(),h(),d(t,r),e>=7&&v(t),null==a&&(a=p(e,n,u)),w(a,r)},l=function(t,r){for(var e=-1;e<=7;e+=1)if(!(t+e<=-1||i<=t+e))for(var n=-1;n<=7;n+=1)r+n<=-1||i<=r+n||(o[t+e][r+n]=0<=e&&e<=6&&(0==n||6==n)||0<=n&&n<=6&&(0==e||6==e)||2<=e&&e<=4&&2<=n&&n<=4)},h=function(){for(var t=8;t<i-8;t+=1)null==o[t][6]&&(o[t][6]=t%2==0);for(var r=8;r<i-8;r+=1)null==o[6][r]&&(o[6][r]=r%2==0)},s=function(){for(var t=B.getPatternPosition(e),r=0;r<t.length;r+=1)for(var n=0;n<t.length;n+=1){var i=t[r],a=t[n];if(null==o[i][a])for(var u=-2;u<=2;u+=1)for(var f=-2;f<=2;f+=1)o[i+u][a+f]=-2==u||2==u||-2==f||2==f||0==u&&0==f}},v=function(t){for(var r=B.getBCHTypeNumber(e),n=0;n<18;n+=1){var a=!t&&1==(r>>n&1);o[Math.floor(n/3)][n%3+i-8-3]=a}for(n=0;n<18;n+=1){a=!t&&1==(r>>n&1);o[n%3+i-8-3][Math.floor(n/3)]=a}},d=function(t,r){for(var e=n<<3|r,a=B.getBCHTypeInfo(e),u=0;u<15;u+=1){var f=!t&&1==(a>>u&1);u<6?o[u][8]=f:u<8?o[u+1][8]=f:o[i-15+u][8]=f}for(u=0;u<15;u+=1){f=!t&&1==(a>>u&1);u<8?o[8][i-u-1]=f:u<9?o[8][15-u-1+1]=f:o[8][15-u-1]=f}o[i-8][8]=!t},w=function(t,r){for(var e=-1,n=i-1,a=7,u=0,f=B.getMaskFunction(r),c=i-1;c>0;c-=2)for(6==c&&(c-=1);;){for(var g=0;g<2;g+=1)if(null==o[n][c-g]){var l=!1;u<t.length&&(l=1==(t[u]>>>a&1)),f(n,c-g)&&(l=!l),o[n][c-g]=l,-1==(a-=1)&&(u+=1,a=7)}if((n+=e)<0||i<=n){n-=e,e=-e;break}}},p=function(t,r,e){for(var n=A.getRSBlocks(t,r),o=b(),i=0;i<e.length;i+=1){var a=e[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var u=0;for(i=0;i<n.length;i+=1)u+=n[i].dataCount;if(o.getLengthInBits()>8*u)throw"code length overflow. ("+o.getLengthInBits()+">"+8*u+")";for(o.getLengthInBits()+4<=8*u&&o.put(0,4);o.getLengthInBits()%8!=0;)o.putBit(!1);for(;!(o.getLengthInBits()>=8*u||(o.put(236,8),o.getLengthInBits()>=8*u));)o.put(17,8);return function(t,r){for(var e=0,n=0,o=0,i=new Array(r.length),a=new Array(r.length),u=0;u<r.length;u+=1){var f=r[u].dataCount,c=r[u].totalCount-f;n=Math.max(n,f),o=Math.max(o,c),i[u]=new Array(f);for(var g=0;g<i[u].length;g+=1)i[u][g]=255&t.getBuffer()[g+e];e+=f;var l=B.getErrorCorrectPolynomial(c),h=k(i[u],l.getLength()-1).mod(l);for(a[u]=new Array(l.getLength()-1),g=0;g<a[u].length;g+=1){var s=g+h.getLength()-a[u].length;a[u][g]=s>=0?h.getAt(s):0}}var v=0;for(g=0;g<r.length;g+=1)v+=r[g].totalCount;var d=new Array(v),w=0;for(g=0;g<n;g+=1)for(u=0;u<r.length;u+=1)g<i[u].length&&(d[w]=i[u][g],w+=1);for(g=0;g<o;g+=1)for(u=0;u<r.length;u+=1)g<a[u].length&&(d[w]=a[u][g],w+=1);return d}(o,n)};f.addData=function(t,r){var e=null;switch(r=r||"Byte"){case"Numeric":e=M(t);break;case"Alphanumeric":e=x(t);break;case"Byte":e=m(t);break;case"Kanji":e=L(t);break;default:throw"mode:"+r}u.push(e),a=null},f.isDark=function(t,r){if(t<0||i<=t||r<0||i<=r)throw t+","+r;return o[t][r]},f.getModuleCount=function(){return i},f.make=function(){if(e<1){for(var t=1;t<40;t++){for(var r=A.getRSBlocks(t,n),o=b(),i=0;i<u.length;i++){var a=u[i];o.put(a.getMode(),4),o.put(a.getLength(),B.getLengthInBits(a.getMode(),t)),a.write(o)}var g=0;for(i=0;i<r.length;i++)g+=r[i].dataCount;if(o.getLengthInBits()<=8*g)break}e=t}c(!1,function(){for(var t=0,r=0,e=0;e<8;e+=1){c(!0,e);var n=B.getLostPoint(f);(0==e||t>n)&&(t=n,r=e)}return r}())},f.createTableTag=function(t,r){t=t||2;var e="";e+='<table style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: "+(r=void 0===r?4*t:r)+"px;",e+='">',e+="<tbody>";for(var n=0;n<f.getModuleCount();n+=1){e+="<tr>";for(var o=0;o<f.getModuleCount();o+=1)e+='<td style="',e+=" border-width: 0px; border-style: none;",e+=" border-collapse: collapse;",e+=" padding: 0px; margin: 0px;",e+=" width: "+t+"px;",e+=" height: "+t+"px;",e+=" background-color: ",e+=f.isDark(n,o)?"#000000":"#ffffff",e+=";",e+='"/>';e+="</tr>"}return e+="</tbody>",e+="</table>"},f.createSvgTag=function(t,r,e,n){var o={};"object"==typeof arguments[0]&&(t=(o=arguments[0]).cellSize,r=o.margin,e=o.alt,n=o.title),t=t||2,r=void 0===r?4*t:r,(e="string"==typeof e?{text:e}:e||{}).text=e.text||null,e.id=e.text?e.id||"qrcode-description":null,(n="string"==typeof n?{text:n}:n||{}).text=n.text||null,n.id=n.text?n.id||"qrcode-title":null;var i,a,u,c,g=f.getModuleCount()*t+2*r,l="";for(c="l"+t+",0 0,"+t+" -"+t+",0 0,-"+t+"z ",l+='<svg version="1.1" xmlns="http://www.w3.org/2000/svg"',l+=o.scalable?"":' width="'+g+'px" height="'+g+'px"',l+=' viewBox="0 0 '+g+" "+g+'" ',l+=' preserveAspectRatio="xMinYMin meet"',l+=n.text||e.text?' role="img" aria-labelledby="'+y([n.id,e.id].join(" ").trim())+'"':"",l+=">",l+=n.text?'<title id="'+y(n.id)+'">'+y(n.text)+"</title>":"",l+=e.text?'<description id="'+y(e.id)+'">'+y(e.text)+"</description>":"",l+='<rect width="100%" height="100%" fill="white" cx="0" cy="0"/>',l+='<path d="',a=0;a<f.getModuleCount();a+=1)for(u=a*t+r,i=0;i<f.getModuleCount();i+=1)f.isDark(a,i)&&(l+="M"+(i*t+r)+","+u+c);return l+='" stroke="transparent" fill="black"/>',l+="</svg>"},f.createDataURL=function(t,r){t=t||2,r=void 0===r?4*t:r;var e=f.getModuleCount()*t+2*r,n=r,o=e-r;return I(e,e,function(r,e){if(n<=r&&r<o&&n<=e&&e<o){var i=Math.floor((r-n)/t),a=Math.floor((e-n)/t);return f.isDark(a,i)?0:1}return 1})},f.createImgTag=function(t,r,e){t=t||2,r=void 0===r?4*t:r;var n=f.getModuleCount()*t+2*r,o="";return o+="<img",o+=' src="',o+=f.createDataURL(t,r),o+='"',o+=' width="',o+=n,o+='"',o+=' height="',o+=n,o+='"',e&&(o+=' alt="',o+=y(e),o+='"'),o+="/>"};var y=function(t){for(var r="",e=0;e<t.length;e+=1){var n=t.charAt(e);switch(n){case"<":r+="&lt;";break;case">":r+="&gt;";break;case"&":r+="&amp;";break;case'"':r+="&quot;";break;default:r+=n}}return r};return f.createASCII=function(t,r){if((t=t||1)<2)return function(t){t=void 0===t?2:t;var r,e,n,o,i,a=1*f.getModuleCount()+2*t,u=t,c=a-t,g={"██":"█","█ ":"▀"," █":"▄","  ":" "},l={"██":"▀","█ ":"▀"," █":" ","  ":" "},h="";for(r=0;r<a;r+=2){for(n=Math.floor((r-u)/1),o=Math.floor((r+1-u)/1),e=0;e<a;e+=1)i="█",u<=e&&e<c&&u<=r&&r<c&&f.isDark(n,Math.floor((e-u)/1))&&(i=" "),u<=e&&e<c&&u<=r+1&&r+1<c&&f.isDark(o,Math.floor((e-u)/1))?i+=" ":i+="█",h+=t<1&&r+1>=c?l[i]:g[i];h+="\n"}return a%2&&t>0?h.substring(0,h.length-a-1)+Array(a+1).join("▀"):h.substring(0,h.length-1)}(r);t-=1,r=void 0===r?2*t:r;var e,n,o,i,a=f.getModuleCount()*t+2*r,u=r,c=a-r,g=Array(t+1).join("██"),l=Array(t+1).join("  "),h="",s="";for(e=0;e<a;e+=1){for(o=Math.floor((e-u)/t),s="",n=0;n<a;n+=1)i=1,u<=n&&n<c&&u<=e&&e<c&&f.isDark(o,Math.floor((n-u)/t))&&(i=0),s+=i?g:l;for(o=0;o<t;o+=1)h+=s+"\n"}return h.substring(0,h.length-1)},f.renderTo2dContext=function(t,r){r=r||2;for(var e=f.getModuleCount(),n=0;n<e;n++)for(var o=0;o<e;o++)t.fillStyle=f.isDark(n,o)?"black":"white",t.fillRect(n*r,o*r,r,r)},f};t.stringToBytes=(t.stringToBytesFuncs={default:function(t){for(var r=[],e=0;e<t.length;e+=1){var n=t.charCodeAt(e);r.push(255&n)}return r}}).default,t.createStringToBytes=function(t,r){var e=function(){for(var e=S(t),n=function(){var t=e.read();if(-1==t)throw"eof";return t},o=0,i={};;){var a=e.read();if(-1==a)break;var u=n(),f=n()<<8|n();i[String.fromCharCode(a<<8|u)]=f,o+=1}if(o!=r)throw o+" != "+r;return i}(),n="?".charCodeAt(0);return function(t){for(var r=[],o=0;o<t.length;o+=1){var i=t.charCodeAt(o);if(i<128)r.push(i);else{var a=e[t.charAt(o)];"number"==typeof a?(255&a)==a?r.push(a):(r.push(a>>>8),r.push(255&a)):r.push(n)}}return r}};var r,e,n,o,i,a=1,u=2,f=4,c=8,g={L:1,M:0,Q:3,H:2},l=0,h=1,s=2,v=3,d=4,w=5,p=6,y=7,B=(r=[[],[6,18],[6,22],[6,26],[6,30],[6,34],[6,22,38],[6,24,42],[6,26,46],[6,28,50],[6,30,54],[6,32,58],[6,34,62],[6,26,46,66],[6,26,48,70],[6,26,50,74],[6,30,54,78],[6,30,56,82],[6,30,58,86],[6,34,62,90],[6,28,50,72,94],[6,26,50,74,98],[6,30,54,78,102],[6,28,54,80,106],[6,32,58,84,110],[6,30,58,86,114],[6,34,62,90,118],[6,26,50,74,98,122],[6,30,54,78,102,126],[6,26,52,78,104,130],[6,30,56,82,108,134],[6,34,60,86,112,138],[6,30,58,86,114,142],[6,34,62,90,118,146],[6,30,54,78,102,126,150],[6,24,50,76,102,128,154],[6,28,54,80,106,132,158],[6,32,58,84,110,136,162],[6,26,54,82,110,138,166],[6,30,58,86,114,142,170]],e=1335,n=7973,i=function(t){for(var r=0;0!=t;)r+=1,t>>>=1;return r},(o={}).getBCHTypeInfo=function(t){for(var r=t<<10;i(r)-i(e)>=0;)r^=e<<i(r)-i(e);return 21522^(t<<10|r)},o.getBCHTypeNumber=function(t){for(var r=t<<12;i(r)-i(n)>=0;)r^=n<<i(r)-i(n);return t<<12|r},o.getPatternPosition=function(t){return r[t-1]},o.getMaskFunction=function(t){switch(t){case l:return function(t,r){return(t+r)%2==0};case h:return function(t,r){return t%2==0};case s:return function(t,r){return r%3==0};case v:return function(t,r){return(t+r)%3==0};case d:return function(t,r){return(Math.floor(t/2)+Math.floor(r/3))%2==0};case w:return function(t,r){return t*r%2+t*r%3==0};case p:return function(t,r){return(t*r%2+t*r%3)%2==0};case y:return function(t,r){return(t*r%3+(t+r)%2)%2==0};default:throw"bad maskPattern:"+t}},o.getErrorCorrectPolynomial=function(t){for(var r=k([1],0),e=0;e<t;e+=1)r=r.multiply(k([1,C.gexp(e)],0));return r},o.getLengthInBits=function(t,r){if(1<=r&&r<10)switch(t){case a:return 10;case u:return 9;case f:case c:return 8;default:throw"mode:"+t}else if(r<27)switch(t){case a:return 12;case u:return 11;case f:return 16;case c:return 10;default:throw"mode:"+t}else{if(!(r<41))throw"type:"+r;switch(t){case a:return 14;case u:return 13;case f:return 16;case c:return 12;default:throw"mode:"+t}}},o.getLostPoint=function(t){for(var r=t.getModuleCount(),e=0,n=0;n<r;n+=1)for(var o=0;o<r;o+=1){for(var i=0,a=t.isDark(n,o),u=-1;u<=1;u+=1)if(!(n+u<0||r<=n+u))for(var f=-1;f<=1;f+=1)o+f<0||r<=o+f||0==u&&0==f||a==t.isDark(n+u,o+f)&&(i+=1);i>5&&(e+=3+i-5)}for(n=0;n<r-1;n+=1)for(o=0;o<r-1;o+=1){var c=0;t.isDark(n,o)&&(c+=1),t.isDark(n+1,o)&&(c+=1),t.isDark(n,o+1)&&(c+=1),t.isDark(n+1,o+1)&&(c+=1),0!=c&&4!=c||(e+=3)}for(n=0;n<r;n+=1)for(o=0;o<r-6;o+=1)t.isDark(n,o)&&!t.isDark(n,o+1)&&t.isDark(n,o+2)&&t.isDark(n,o+3)&&t.isDark(n,o+4)&&!t.isDark(n,o+5)&&t.isDark(n,o+6)&&(e+=40);for(o=0;o<r;o+=1)for(n=0;n<r-6;n+=1)t.isDark(n,o)&&!t.isDark(n+1,o)&&t.isDark(n+2,o)&&t.isDark(n+3,o)&&t.isDark(n+4,o)&&!t.isDark(n+5,o)&&t.isDark(n+6,o)&&(e+=40);var g=0;for(o=0;o<r;o+=1)for(n=0;n<r;n+=1)t.isDark(n,o)&&(g+=1);return e+=Math.abs(100*g/r/r-50)/5*10},o),C=function(){for(var t=new Array(256),r=new Array(256),e=0;e<8;e+=1)t[e]=1<<e;for(e=8;e<256;e+=1)t[e]=t[e-4]^t[e-5]^t[e-6]^t[e-8];for(e=0;e<255;e+=1)r[t[e]]=e;var n={glog:function(t){if(t<1)throw"glog("+t+")";return r[t]},gexp:function(r){for(;r<0;)r+=255;for(;r>=256;)r-=255;return t[r]}};return n}();function k(t,r){if(void 0===t.length)throw t.length+"/"+r;var e=function(){for(var e=0;e<t.length&&0==t[e];)e+=1;for(var n=new Array(t.length-e+r),o=0;o<t.length-e;o+=1)n[o]=t[o+e];return n}(),n={getAt:function(t){return e[t]},getLength:function(){return e.length},multiply:function(t){for(var r=new Array(n.getLength()+t.getLength()-1),e=0;e<n.getLength();e+=1)for(var o=0;o<t.getLength();o+=1)r[e+o]^=C.gexp(C.glog(n.getAt(e))+C.glog(t.getAt(o)));return k(r,0)},mod:function(t){if(n.getLength()-t.getLength()<0)return n;for(var r=C.glog(n.getAt(0))-C.glog(t.getAt(0)),e=new Array(n.getLength()),o=0;o<n.getLength();o+=1)e[o]=n.getAt(o);for(o=0;o<t.getLength();o+=1)e[o]^=C.gexp(C.glog(t.getAt(o))+r);return k(e,0).mod(t)}};return n}var A=function(){var t=[[1,26,19],[1,26,16],[1,26,13],[1,26,9],[1,44,34],[1,44,28],[1,44,22],[1,44,16],[1,70,55],[1,70,44],[2,35,17],[2,35,13],[1,100,80],[2,50,32],[2,50,24],[4,25,9],[1,134,108],[2,67,43],[2,33,15,2,34,16],[2,33,11,2,34,12],[2,86,68],[4,43,27],[4,43,19],[4,43,15],[2,98,78],[4,49,31],[2,32,14,4,33,15],[4,39,13,1,40,14],[2,121,97],[2,60,38,2,61,39],[4,40,18,2,41,19],[4,40,14,2,41,15],[2,146,116],[3,58,36,2,59,37],[4,36,16,4,37,17],[4,36,12,4,37,13],[2,86,68,2,87,69],[4,69,43,1,70,44],[6,43,19,2,44,20],[6,43,15,2,44,16],[4,101,81],[1,80,50,4,81,51],[4,50,22,4,51,23],[3,36,12,8,37,13],[2,116,92,2,117,93],[6,58,36,2,59,37],[4,46,20,6,47,21],[7,42,14,4,43,15],[4,133,107],[8,59,37,1,60,38],[8,44,20,4,45,21],[12,33,11,4,34,12],[3,145,115,1,146,116],[4,64,40,5,65,41],[11,36,16,5,37,17],[11,36,12,5,37,13],[5,109,87,1,110,88],[5,65,41,5,66,42],[5,54,24,7,55,25],[11,36,12,7,37,13],[5,122,98,1,123,99],[7,73,45,3,74,46],[15,43,19,2,44,20],[3,45,15,13,46,16],[1,135,107,5,136,108],[10,74,46,1,75,47],[1,50,22,15,51,23],[2,42,14,17,43,15],[5,150,120,1,151,121],[9,69,43,4,70,44],[17,50,22,1,51,23],[2,42,14,19,43,15],[3,141,113,4,142,114],[3,70,44,11,71,45],[17,47,21,4,48,22],[9,39,13,16,40,14],[3,135,107,5,136,108],[3,67,41,13,68,42],[15,54,24,5,55,25],[15,43,15,10,44,16],[4,144,116,4,145,117],[17,68,42],[17,50,22,6,51,23],[19,46,16,6,47,17],[2,139,111,7,140,112],[17,74,46],[7,54,24,16,55,25],[34,37,13],[4,151,121,5,152,122],[4,75,47,14,76,48],[11,54,24,14,55,25],[16,45,15,14,46,16],[6,147,117,4,148,118],[6,73,45,14,74,46],[11,54,24,16,55,25],[30,46,16,2,47,17],[8,132,106,4,133,107],[8,75,47,13,76,48],[7,54,24,22,55,25],[22,45,15,13,46,16],[10,142,114,2,143,115],[19,74,46,4,75,47],[28,50,22,6,51,23],[33,46,16,4,47,17],[8,152,122,4,153,123],[22,73,45,3,74,46],[8,53,23,26,54,24],[12,45,15,28,46,16],[3,147,117,10,148,118],[3,73,45,23,74,46],[4,54,24,31,55,25],[11,45,15,31,46,16],[7,146,116,7,147,117],[21,73,45,7,74,46],[1,53,23,37,54,24],[19,45,15,26,46,16],[5,145,115,10,146,116],[19,75,47,10,76,48],[15,54,24,25,55,25],[23,45,15,25,46,16],[13,145,115,3,146,116],[2,74,46,29,75,47],[42,54,24,1,55,25],[23,45,15,28,46,16],[17,145,115],[10,74,46,23,75,47],[10,54,24,35,55,25],[19,45,15,35,46,16],[17,145,115,1,146,116],[14,74,46,21,75,47],[29,54,24,19,55,25],[11,45,15,46,46,16],[13,145,115,6,146,116],[14,74,46,23,75,47],[44,54,24,7,55,25],[59,46,16,1,47,17],[12,151,121,7,152,122],[12,75,47,26,76,48],[39,54,24,14,55,25],[22,45,15,41,46,16],[6,151,121,14,152,122],[6,75,47,34,76,48],[46,54,24,10,55,25],[2,45,15,64,46,16],[17,152,122,4,153,123],[29,74,46,14,75,47],[49,54,24,10,55,25],[24,45,15,46,46,16],[4,152,122,18,153,123],[13,74,46,32,75,47],[48,54,24,14,55,25],[42,45,15,32,46,16],[20,147,117,4,148,118],[40,75,47,7,76,48],[43,54,24,22,55,25],[10,45,15,67,46,16],[19,148,118,6,149,119],[18,75,47,31,76,48],[34,54,24,34,55,25],[20,45,15,61,46,16]],r=function(t,r){var e={};return e.totalCount=t,e.dataCount=r,e},e={};return e.getRSBlocks=function(e,n){var o=function(r,e){switch(e){case g.L:return t[4*(r-1)+0];case g.M:return t[4*(r-1)+1];case g.Q:return t[4*(r-1)+2];case g.H:return t[4*(r-1)+3];default:return}}(e,n);if(void 0===o)throw"bad rs block @ typeNumber:"+e+"/errorCorrectionLevel:"+n;for(var i=o.length/3,a=[],u=0;u<i;u+=1)for(var f=o[3*u+0],c=o[3*u+1],l=o[3*u+2],h=0;h<f;h+=1)a.push(r(c,l));return a},e}(),b=function(){var t=[],r=0,e={getBuffer:function(){return t},getAt:function(r){var e=Math.floor(r/8);return 1==(t[e]>>>7-r%8&1)},put:function(t,r){for(var n=0;n<r;n+=1)e.putBit(1==(t>>>r-n-1&1))},getLengthInBits:function(){return r},putBit:function(e){var n=Math.floor(r/8);t.length<=n&&t.push(0),e&&(t[n]|=128>>>r%8),r+=1}};return e},M=function(t){var r=a,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+2<r.length;)t.put(o(r.substring(n,n+3)),10),n+=3;n<r.length&&(r.length-n==1?t.put(o(r.substring(n,n+1)),4):r.length-n==2&&t.put(o(r.substring(n,n+2)),7))}},o=function(t){for(var r=0,e=0;e<t.length;e+=1)r=10*r+i(t.charAt(e));return r},i=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);throw"illegal char :"+t};return n},x=function(t){var r=u,e=t,n={getMode:function(){return r},getLength:function(t){return e.length},write:function(t){for(var r=e,n=0;n+1<r.length;)t.put(45*o(r.charAt(n))+o(r.charAt(n+1)),11),n+=2;n<r.length&&t.put(o(r.charAt(n)),6)}},o=function(t){if("0"<=t&&t<="9")return t.charCodeAt(0)-"0".charCodeAt(0);if("A"<=t&&t<="Z")return t.charCodeAt(0)-"A".charCodeAt(0)+10;switch(t){case" ":return 36;case"$":return 37;case"%":return 38;case"*":return 39;case"+":return 40;case"-":return 41;case".":return 42;case"/":return 43;case":":return 44;default:throw"illegal char :"+t}};return n},m=function(r){var e=f,n=t.stringToBytes(r),o={getMode:function(){return e},getLength:function(t){return n.length},write:function(t){for(var r=0;r<n.length;r+=1)t.put(n[r],8)}};return o},L=function(r){var e=c,n=t.stringToBytesFuncs.SJIS;if(!n)throw"sjis not supported.";!function(){var t=n("友");if(2!=t.length||38726!=(t[0]<<8|t[1]))throw"sjis not supported."}();var o=n(r),i={getMode:function(){return e},getLength:function(t){return~~(o.length/2)},write:function(t){for(var r=o,e=0;e+1<r.length;){var n=(255&r[e])<<8|255&r[e+1];if(33088<=n&&n<=40956)n-=33088;else{if(!(57408<=n&&n<=60351))throw"illegal char at "+(e+1)+"/"+n;n-=49472}n=192*(n>>>8&255)+(255&n),t.put(n,13),e+=2}if(e<r.length)throw"illegal char at "+(e+1)}};return i},D=function(){var t=[],r={writeByte:function(r){t.push(255&r)},writeShort:function(t){r.writeByte(t),r.writeByte(t>>>8)},writeBytes:function(t,e,n){e=e||0,n=n||t.length;for(var o=0;o<n;o+=1)r.writeByte(t[o+e])},writeString:function(t){for(var e=0;e<t.length;e+=1)r.writeByte(t.charCodeAt(e))},toByteArray:function(){return t},toString:function(){var r="";r+="[";for(var e=0;e<t.length;e+=1)e>0&&(r+=","),r+=t[e];return r+="]"}};return r},S=function(t){var r=t,e=0,n=0,o=0,i={read:function(){for(;o<8;){if(e>=r.length){if(0==o)return-1;throw"unexpected end of file./"+o}var t=r.charAt(e);if(e+=1,"="==t)return o=0,-1;t.match(/^\s$/)||(n=n<<6|a(t.charCodeAt(0)),o+=6)}var i=n>>>o-8&255;return o-=8,i}},a=function(t){if(65<=t&&t<=90)return t-65;if(97<=t&&t<=122)return t-97+26;if(48<=t&&t<=57)return t-48+52;if(43==t)return 62;if(47==t)return 63;throw"c:"+t};return i},I=function(t,r,e){for(var n=function(t,r){var e=t,n=r,o=new Array(t*r),i={setPixel:function(t,r,n){o[r*e+t]=n},write:function(t){t.writeString("GIF87a"),t.writeShort(e),t.writeShort(n),t.writeByte(128),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(0),t.writeByte(255),t.writeByte(255),t.writeByte(255),t.writeString(","),t.writeShort(0),t.writeShort(0),t.writeShort(e),t.writeShort(n),t.writeByte(0);var r=a(2);t.writeByte(2);for(var o=0;r.length-o>255;)t.writeByte(255),t.writeBytes(r,o,255),o+=255;t.writeByte(r.length-o),t.writeBytes(r,o,r.length-o),t.writeByte(0),t.writeString(";")}},a=function(t){for(var r=1<<t,e=1+(1<<t),n=t+1,i=u(),a=0;a<r;a+=1)i.add(String.fromCharCode(a));i.add(String.fromCharCode(r)),i.add(String.fromCharCode(e));var f,c,g,l=D(),h=(f=l,c=0,g=0,{write:function(t,r){if(t>>>r!=0)throw"length over";for(;c+r>=8;)f.writeByte(255&(t<<c|g)),r-=8-c,t>>>=8-c,g=0,c=0;g|=t<<c,c+=r},flush:function(){c>0&&f.writeByte(g)}});h.write(r,n);var s=0,v=String.fromCharCode(o[s]);for(s+=1;s<o.length;){var d=String.fromCharCode(o[s]);s+=1,i.contains(v+d)?v+=d:(h.write(i.indexOf(v),n),i.size()<4095&&(i.size()==1<<n&&(n+=1),i.add(v+d)),v=d)}return h.write(i.indexOf(v),n),h.write(e,n),h.flush(),l.toByteArray()},u=function(){var t={},r=0,e={add:function(n){if(e.contains(n))throw"dup key:"+n;t[n]=r,r+=1},size:function(){return r},indexOf:function(r){return t[r]},contains:function(r){return void 0!==t[r]}};return e};return i}(t,r),o=0;o<r;o+=1)for(var i=0;i<t;i+=1)n.setPixel(i,o,e(i,o));var a=D();n.write(a);for(var u=function(){var t=0,r=0,e=0,n="",o={},i=function(t){n+=String.fromCharCode(a(63&t))},a=function(t){if(t<0);else{if(t<26)return 65+t;if(t<52)return t-26+97;if(t<62)return t-52+48;if(62==t)return 43;if(63==t)return 47}throw"n:"+t};return o.writeByte=function(n){for(t=t<<8|255&n,r+=8,e+=1;r>=6;)i(t>>>r-6),r-=6},o.flush=function(){if(r>0&&(i(t<<6-r),t=0,r=0),e%3!=0)for(var o=3-e%3,a=0;a<o;a+=1)n+="="},o.toString=function(){return n},o}(),f=a.toByteArray(),c=0;c<f.length;c+=1)u.writeByte(f[c]);return u.flush(),"data:image/gif;base64,"+u};return t}();qrcode.stringToBytesFuncs["UTF-8"]=function(t){return function(t){for(var r=[],e=0;e<t.length;e++){var n=t.charCodeAt(e);n<128?r.push(n):n<2048?r.push(192|n>>6,128|63&n):n<55296||n>=57344?r.push(224|n>>12,128|n>>6&63,128|63&n):(e++,n=65536+((1023&n)<<10|1023&t.charCodeAt(e)),r.push(240|n>>18,128|n>>12&63,128|n>>6&63,128|63&n))}return r}(t)},function(t){"function"==typeof define&&define.amd?define([],t):"object"==typeof exports&&(module.exports=t())}(function(){return qrcode});
+</script>
+<script>
+/* OBSKURA 360 — Şablon Motoru v0.2 (index.html ve v.html'e aynen gömülür)
+   Şablon = hız eğrisi (segmentler) + FX katmanı + renk + logo + müzik.
+   Motor, şablonu Cloudinary dönüşüm zincirine çevirir; ileride FFmpeg'e de çevrilebilir. */
+var B360E=(function(){
+"use strict";
+function r2(x){return Math.round(x*100)/100}
+function lid(p){return String(p).replace(/\//g,":")}
+var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,tol:25};
+var POS={ne:"g_north_east,x_0.04,y_0.03",nw:"g_north_west,x_0.04,y_0.03",se:"g_south_east,x_0.04,y_0.04",sw:"g_south_west,x_0.04,y_0.04",s:"g_south,y_0.04",n:"g_north,y_0.03"};
+
+/* ---- ŞABLONLAR ----
+   w(D,F): D=kaynak süresi (sn), F=yüz anı (sn). Segment: {s,e,r,dbl,x}
+   r = e_accelerate (-50 yarı hız … 100 iki kat), dbl=1 → ikinci -50 (¼×), x: "rev" | "flash" | "zoom" */
+var TEMPLATES=[
+ {id:"yildiz",n:"Yıldız Yağmuru",e:"✨",d:"Yavaş giriş, hızlı tur, yüzünde ağır çekim — yıldızlar yağar",fx:"yildiz",grade:"e_saturation:15/e_contrast:6",
+  w:function(D,F){return[{s:0,e:1.5,r:-50},{s:1.5,e:F-0.7,r:100},{s:F-0.7,e:F+0.9,r:-50,dbl:1},{s:F+0.9,e:D-2,r:100},{s:D-2,e:D,r:-50}]}},
+ {id:"kalp",n:"Kalp Kalbe",e:"💗",d:"Yumuşak giriş, yüzünde kalpler ve ağır çekim, hızlı çıkış",fx:"kalp",grade:"e_saturation:10/e_brightness:4",
+  w:function(D,F){return[{s:0,e:2,r:-50},{s:2,e:F-0.8,r:0},{s:F-0.8,e:F+1,r:-50,dbl:1},{s:F+1,e:D,r:100}]}},
+ {id:"konfeti",n:"Konfeti Patlaması",e:"🎉",d:"Hızlı giriş, flaş, ağır çekim vurgu, geri sarımlı final",fx:"konfeti",grade:"e_saturation:25/e_contrast:8",
+  w:function(D,F){return[{s:0,e:F-1,r:60},{s:F-1,e:F-0.88,r:0,x:"flash"},{s:F-0.88,e:F+1,r:-50},{s:F+1,e:D,r:60},{s:D-3,e:D,r:100,x:"rev"}]}},
+ {id:"noir",n:"Sinema Noir",e:"🎩",d:"Siyah-beyaz, uzun ağır çekim yüz anı, hızlı tur, yavaş kapanış",fx:"",grade:"e_grayscale/e_contrast:18",noise:10,
+  w:function(D,F){return[{s:0,e:F-1.2,r:0},{s:F-1.2,e:F+1.4,r:-50},{s:F+1.4,e:D-2,r:100},{s:D-2,e:D,r:-50}]}},
+ {id:"geri",n:"Geri Sarım Pro",e:"⏪",d:"Hızlı tur, yüzünde ağır çekim, bütün tur tersten, son bir yüz anı",fx:"sparkle",grade:"e_saturation:30/e_contrast:10",
+  w:function(D,F){return[{s:0,e:F-0.6,r:100},{s:F-0.6,e:F+0.8,r:-50},{s:F+0.8,e:D,r:100},{s:0,e:D,r:100,x:"rev"},{s:F-0.6,e:F+0.8,r:-50,free:1}]}},
+ {id:"kulup",n:"Kulüp",e:"🪩",d:"Zoom vuruşları, ¼× yüz anı, strobe flaşlar, hızlı çıkış",fx:"sparkle",grade:"e_contrast:20/e_saturation:20",
+  w:function(D,F){var a=[],t=0,i;
+    for(i=0;i<3&&t+2.4<F-0.5;i++){a.push({s:t,e:t+1.8,r:60});a.push({s:t+1.8,e:t+2.4,r:60,x:"zoom"});t+=2.4}
+    a.push({s:t,e:F-0.5,r:60});a.push({s:F-0.5,e:F+0.7,r:-50,dbl:1});
+    t=F+0.7;for(i=0;i<2;i++){a.push({s:t,e:t+0.1,r:0,x:"flash"});a.push({s:t+0.1,e:t+0.5,r:100});t+=0.5}
+    a.push({s:t,e:D,r:100});return a}}
+];
+function byId(id){for(var i=0;i<TEMPLATES.length;i++)if(TEMPLATES[i].id===id)return TEMPLATES[i];return TEMPLATES[0]}
+
+/* yüz anı: kol misafirin önünden başlar; yüz f0 + k*tur anlarında öne gelir */
+function facePick(D,f0,tur){
+  f0=+f0||0;tur=+tur||10;if(tur<2)tur=2;
+  var c=[],k=0,t;
+  while((t=f0+k*tur)<D&&k<50){c.push(t);k++}
+  var lo=Math.min(2.5,D*0.3),hi=D-2;
+  for(var i=0;i<c.length;i++)if(c[i]>=lo&&c[i]<=hi)return r2(c[i]);
+  for(i=0;i<c.length;i++)if(c[i]>1.5&&c[i]<D-1.5)return r2(c[i]);
+  return r2(D/2);
+}
+/* segmentleri kırp, sırala, boşluk bırakma (ters segmentler ayrı sayılır) */
+function norm(ws,D){
+  var out=[],prevEnd=0;
+  for(var i=0;i<ws.length;i++){
+    var w=ws[i],s=Math.max(0,Math.min(D,+w.s)),e=Math.max(0,Math.min(D,+w.e));
+    if(w.x==="rev"||w.free){ /* ters/tekrar parçalar akış sırasına bağlı değil */
+      if(e-s>=0.3)out.push({s:r2(s),e:r2(e),r:w.r||0,dbl:w.dbl?1:0,x:w.x||""});
+      continue;
+    }
+    if(s<prevEnd)s=prevEnd;
+    if(e-s<0.08)continue;
+    out.push({s:r2(s),e:r2(e),r:w.r||0,dbl:w.dbl?1:0,x:w.x||""});
+    prevEnd=e;
+  }
+  return out;
+}
+function fac(sg,o){var f=1+(sg.r||0)/100;if(sg.dbl&&o.dbl)f*=0.5;return f}
+function outDur(segs,o){var t=0;for(var i=0;i<segs.length;i++)t+=(segs[i].e-segs[i].s)/fac(segs[i],o);return r2(t)}
+function segComps(sg,o,idx){
+  var c=[],base="so_"+r2(sg.s)+",eo_"+r2(sg.e);
+  if(sg.r)base+=",e_accelerate:"+sg.r;
+  c.push(base);
+  if(sg.x==="rev")c.push("e_reverse");
+  if(sg.x==="flash"&&o.flash)c.push("e_brightness:90");
+  if(sg.dbl&&o.dbl)c.push("e_accelerate:-50");
+  if(sg.x==="zoom"&&o.zoom&&idx>0){c.push("c_crop,w_0.85,h_0.85,g_center");c.push("c_scale,w_1.0,h_1.0,fl_relative")}
+  return c;
+}
+function flagsOf(spec){var o=Object.assign({},DEFO);if(spec.o)Object.keys(spec.o).forEach(function(k){o[k]=spec.o[k]});return o}
+function plan(spec){
+  var tpl=byId(spec.t),o=flagsOf(spec),D=+spec.d||15;if(D<3)D=3;
+  var F=facePick(D,spec.f,spec.r),segs=norm(tpl.w(D,F),D);
+  return {tpl:tpl,o:o,D:D,F:F,segs:segs,out:outDur(segs,o)};
+}
+function chain(spec){
+  var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
+  P.segs.forEach(function(sg,i){
+    var cs=segComps(sg,o,i);
+    if(i===0)parts=parts.concat(cs);
+    else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
+  });
+  var du=o.du?(",du_"+r2(P.out+0.5)):"";
+  if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
+    var fp=lid(spec.fp||"booth360/_fx");
+    if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
+    else{parts.push("l_video:"+fp+":"+tpl.fx+du);parts.push("c_scale,w_1.0,fl_relative");parts.push("e_make_transparent:"+(o.tol||25)+",co_rgb:00ff00")}
+    parts.push("fl_layer_apply");
+  }
+  if(tpl.grade)parts.push(tpl.grade);
+  if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
+  if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
+  parts.push("q_auto");
+  return parts.join("/");
+}
+function url(spec){
+  return "https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/"+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
+}
+/* misafir kartı için hız şeridi: [{w:oran,k:slow|mid|fast,rev,flash}] */
+function bar(spec){
+  var P=plan(spec),tot=P.out||1,a=[];
+  P.segs.forEach(function(sg){var f=fac(sg,P.o),d=(sg.e-sg.s)/f;
+    a.push({w:d/tot,k:f<0.6?"slow":(f>1.2?"fast":"mid"),rev:sg.x==="rev",flash:sg.x==="flash"})});
+  return a;
+}
+/* QR sayfası için kısa kodlama */
+var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
+function encode(spec){
+  var q=new URLSearchParams();
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
+  q.set("o",s);q.set("tl",String(o.tol||25));
+  return q.toString();
+}
+function decode(str){
+  var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
+  o.tol=+(q.get("tl")||25);spec.o=o;
+  return spec;
+}
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid};
+})();
+</script>
+<script>
+(function(){
+"use strict";
+var VER="v0.2.1";
+var E=B360E;
+function $(s){return document.querySelector(s)}
+var DEF={evt:"",sure:15,cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+  turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
+  fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
+  flags:{zoom:1,flash:1,dbl:1,noise:0,du:1}};
+var S={};
+try{
+  var st=JSON.parse(localStorage.getItem("booth360.v1")||"{}");
+  S=Object.assign({},DEF,st);
+  S.flags=Object.assign({},DEF.flags,st.flags||{});
+  S.tplMusic=Object.assign({},st.tplMusic||{});S.fxHave=Object.assign({},st.fxHave||{});
+  if(!Array.isArray(S.muzikler))S.muzikler=[];if(!Array.isArray(S.aktif))S.aktif=[];
+}catch(e){S=JSON.parse(JSON.stringify(DEF))}
+function save(){try{localStorage.setItem("booth360.v1",JSON.stringify(S))}catch(e){}}
+var cur="attract";
+function go(n){
+  document.querySelectorAll(".screen").forEach(function(s){s.classList.remove("on")});
+  var el=$("#s-"+n);if(el)el.classList.add("on");
+  cur=n;
+  $("#gearBtn").style.display=(n==="attract")?"block":"none";
+  var ft=document.querySelector("footer.tag");if(ft)ft.style.display=(n==="admin"||n==="cal")?"none":"block";
+}
+document.querySelectorAll("[data-go]").forEach(function(b){b.addEventListener("click",function(){go(b.getAttribute("data-go"))})});
+function evSlug(){
+  var s=(S.evt||"etkinlik").toString().toLowerCase();
+  try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}
+  s=s.replace(/ı/g,"i").replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"");
+  return (s||"etkinlik").slice(0,40);
+}
+function stem(name){
+  var s=String(name||"").replace(/\.[^.]+$/,"").toLowerCase();
+  try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}
+  return s.replace(/ı/g,"i").replace(/[^a-z0-9_]+/g,"_").replace(/^_+|_+$/g,"").slice(0,40)||"fx";
+}
+function applyBrand(){$("#attractEvt").textContent=S.evt?S.evt:"15 saniyelik 360° video — çek, şablonunu seç, telefonuna al."}
+applyBrand();
+function pageBase(){return location.href.split(/[?#]/)[0].replace(/[^\/]*$/,"")}
+function activeTpls(){
+  var a=E.TEMPLATES.filter(function(t){return S.aktif.indexOf(t.id)>=0});
+  return a.length?a:E.TEMPLATES.slice();
+}
+function musicFor(tid){return (S.tplMusic&&S.tplMusic[tid])||S.muzikSec||""}
+
+/* ---------- PIN ---------- */
+var PIN="1234",pinBuf="";
+$("#gearBtn").onclick=function(){pinBuf="";drawPin();go("pin")};
+function drawPin(){
+  var p=$("#pinPad");
+  if(!p.childElementCount){
+    ["1","2","3","4","5","6","7","8","9","","0","←"].forEach(function(k){
+      var b=document.createElement("button");b.textContent=k;
+      if(!k)b.style.visibility="hidden";
+      b.onclick=function(){
+        if(k==="←")pinBuf=pinBuf.slice(0,-1);else if(k)pinBuf+=k;
+        if(pinBuf.length>4)pinBuf=pinBuf.slice(0,4);
+        drawPin();
+        if(pinBuf.length===4){
+          if(pinBuf===PIN){pinBuf="";drawPin();fillAdmin();go("admin")}
+          else{pinBuf="";drawPin()}
+        }
+      };
+      p.appendChild(b);
+    });
+  }
+  var d=$("#pinDots").children;
+  for(var i=0;i<4;i++)d[i].className=i<pinBuf.length?"f":"";
+}
+
+/* ---------- BULUT YÜKLEME (ortak) ---------- */
+function cldUpload(file,kind,fields,onProg){
+  return new Promise(function(res,rej){
+    var fd=new FormData();
+    fd.append("file",file);fd.append("upload_preset",S.cldPreset);
+    Object.keys(fields||{}).forEach(function(k){fd.append(k,fields[k])});
+    var xhr=new XMLHttpRequest();
+    xhr.open("POST","https://api.cloudinary.com/v1_1/"+encodeURIComponent(S.cldName)+"/"+kind+"/upload");
+    if(onProg)xhr.upload.onprogress=function(e){if(e.total)onProg(e.loaded/e.total)};
+    xhr.onload=function(){
+      var j=null;try{j=JSON.parse(xhr.responseText)}catch(e){}
+      if(xhr.status>=200&&xhr.status<300&&j&&j.public_id)res(j);
+      else rej(new Error((j&&j.error&&j.error.message)||("yükleme reddedildi ("+xhr.status+")")));
+    };
+    xhr.onerror=function(){rej(new Error("bağlantı hatası"))};
+    xhr.send(fd);
+  });
+}
+
+/* ---------- ADMIN ---------- */
+function fillAdmin(){
+  $("#fEvt").value=S.evt;
+  var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
+  fs.value=String(S.sure);
+  $("#fCld").value=S.cldName;$("#fPreset").value=S.cldPreset;$("#fQr").value=S.qrMod;
+  $("#fTur").value=S.turSn;$("#fYuz").value=S.yuzSn;
+  $("#fLogoPoz").value=S.logoPoz;$("#fLogoW").value=String(S.logoW);
+  $("#fFx").value=S.fxMode;$("#fTol").value=S.fxTol;
+  $("#fkWarm").checked=!!S.warm;$("#fkDbl").checked=!!S.flags.dbl;$("#fkZoom").checked=!!S.flags.zoom;
+  $("#fkFlash").checked=!!S.flags.flash;$("#fkNoise").checked=!!S.flags.noise;$("#fkDu").checked=!!S.flags.du;
+  buildTplList();buildMuzikList();logoInfo();fxInfo();
+  fxProbe(function(ch){if(ch)fxInfo()});
+  $("#verNote").textContent="OBSKURA 360 · "+VER+" · PIN 1234 · Videolar: booth360/"+evSlug()+" · İzleme sayfası: "+pageBase()+"v.html";
+}
+$("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
+$("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
+$("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
+$("#fPreset").addEventListener("input",function(){S.cldPreset=this.value.trim();save()});
+$("#fQr").addEventListener("change",function(){S.qrMod=this.value;save()});
+$("#fTur").addEventListener("change",function(){S.turSn=Math.max(2,Math.min(60,+this.value||10));this.value=S.turSn;save()});
+$("#fYuz").addEventListener("change",function(){S.yuzSn=Math.max(0,Math.min(60,+this.value||0));this.value=S.yuzSn;save()});
+$("#fLogoPoz").addEventListener("change",function(){S.logoPoz=this.value;save()});
+$("#fLogoW").addEventListener("change",function(){S.logoW=this.value;save()});
+$("#fFx").addEventListener("change",function(){S.fxMode=this.value;save()});
+$("#fTol").addEventListener("change",function(){S.fxTol=Math.max(0,Math.min(100,+this.value||25));this.value=S.fxTol;save()});
+[["fkWarm","warm"],["fkDbl","dbl"],["fkZoom","zoom"],["fkFlash","flash"],["fkNoise","noise"],["fkDu","du"]].forEach(function(p){
+  $("#"+p[0]).addEventListener("change",function(){
+    if(p[1]==="warm")S.warm=this.checked?1:0;else S.flags[p[1]]=this.checked?1:0;save();
+  });
+});
+function buildTplList(){
+  var w=$("#tplList");w.innerHTML="";
+  E.TEMPLATES.forEach(function(t){
+    var r=document.createElement("div");r.className="mrow";
+    var ck=document.createElement("input");ck.type="checkbox";ck.style.cssText="width:22px;height:22px;accent-color:var(--amber)";
+    ck.checked=S.aktif.length?S.aktif.indexOf(t.id)>=0:true;
+    ck.onchange=function(){
+      var a=activeTpls().map(function(x){return x.id});
+      if(ck.checked){if(a.indexOf(t.id)<0)a.push(t.id)}else a=a.filter(function(x){return x!==t.id});
+      S.aktif=E.TEMPLATES.map(function(x){return x.id}).filter(function(id){return a.indexOf(id)>=0});
+      if(!S.aktif.length){S.aktif=[t.id];ck.checked=true}
+      save();buildTplList();
+    };
+    var nm=document.createElement("div");nm.className="nm";nm.textContent=t.e+" "+t.n+(t.fx?" · FX: "+t.fx:"");
+    var sel=document.createElement("select");
+    var o0=document.createElement("option");o0.value="";o0.textContent="🎵 genel";sel.appendChild(o0);
+    S.muzikler.forEach(function(m){var o=document.createElement("option");o.value=m.pid;o.textContent=m.n;sel.appendChild(o)});
+    sel.value=(S.tplMusic[t.id]&&S.muzikler.some(function(m){return m.pid===S.tplMusic[t.id]}))?S.tplMusic[t.id]:"";
+    sel.onchange=function(){if(sel.value)S.tplMusic[t.id]=sel.value;else delete S.tplMusic[t.id];save()};
+    r.appendChild(ck);r.appendChild(nm);r.appendChild(sel);w.appendChild(r);
+  });
+}
+/* müzik */
+$("#muzikBtn").onclick=function(){$("#muzikFile").click()};
+$("#muzikFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  var w=$("#muzikList");
+  var st=document.createElement("div");st.className="note";st.textContent="Müzik yükleniyor…";w.appendChild(st);
+  cldUpload(f,"video",{folder:"booth360/_muzik"}).then(function(j){
+    S.muzikler.push({n:f.name.replace(/\.[^.]+$/,""),pid:j.public_id});
+    if(!S.muzikSec)S.muzikSec=j.public_id;
+    save();buildMuzikList();buildTplList();
+  }).catch(function(e){st.textContent="Müzik yüklenemedi: "+((e&&e.message)||"hata");st.className="note err";setTimeout(function(){if(st.parentNode)st.parentNode.removeChild(st)},6000)});
+});
+function buildMuzikList(){
+  var w=$("#muzikList");w.innerHTML="";
+  if(!S.muzikler.length){var d=document.createElement("div");d.className="note";d.textContent="Henüz müzik yok.";w.appendChild(d);return}
+  S.muzikler.forEach(function(m){
+    var r=document.createElement("div");r.className="mrow";
+    var nm=document.createElement("div");nm.className="nm";nm.textContent=(S.muzikSec===m.pid?"🎵 ":"")+m.n;
+    var sec=document.createElement("button");sec.className="btn ghost mini";sec.textContent=S.muzikSec===m.pid?"Genel (seçili)":"Genel yap";
+    sec.onclick=function(){S.muzikSec=m.pid;save();buildMuzikList()};
+    var sil=document.createElement("button");sil.className="btn ghost mini";sil.textContent="Sil";
+    sil.onclick=function(){S.muzikler=S.muzikler.filter(function(x){return x.pid!==m.pid});if(S.muzikSec===m.pid)S.muzikSec=S.muzikler.length?S.muzikler[0].pid:"";
+      Object.keys(S.tplMusic).forEach(function(k){if(S.tplMusic[k]===m.pid)delete S.tplMusic[k]});save();buildMuzikList();buildTplList()};
+    r.appendChild(nm);r.appendChild(sec);r.appendChild(sil);w.appendChild(r);
+  });
+}
+/* logo */
+function logoInfo(){var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");n.textContent=S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok — videoya logo binmez."}
+$("#logoBtn").onclick=function(){$("#logoFile").click()};
+$("#logoFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  var n=$("#logoInfo");n.className="note";n.textContent="Logo yükleniyor…";
+  cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){S.logoPid=j.public_id;save();logoInfo()})
+    .catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
+});
+$("#logoDel").onclick=function(){S.logoPid="";save();logoInfo()};
+/* FX */
+function fxInfo(){
+  var n=$("#fxInfo"),h=Object.keys(S.fxHave||{});
+  n.className="note"+(h.length?" ok":"");
+  n.textContent=h.length?("Yüklü FX: "+h.join(", ")):"Henüz FX videosu yüklenmedi — şablonlar FX'siz çalışır (FX'i Kapalı yap ya da videoları yükle).";
+}
+$("#fxBtn").onclick=function(){$("#fxFile").click()};
+$("#fxFile").addEventListener("change",function(){
+  var files=Array.prototype.slice.call(this.files||[]);this.value="";if(!files.length)return;
+  var n=$("#fxInfo");n.className="note";var done=0,fail=[];
+  n.textContent="FX yükleniyor… 0/"+files.length;
+  function next(){
+    if(!files.length){fxInfo();if(fail.length){n.className="note err";n.textContent+=" — HATA: "+fail.join("; ")}return}
+    var f=files.shift(),id=stem(f.name);
+    cldUpload(f,"video",{public_id:S.fxPath+"/"+id},function(p){n.textContent="FX yükleniyor… "+done+"/"+(done+files.length+1)+" ("+id+" %"+Math.round(p*100)+")"})
+      .then(function(j){S.fxHave[id]=j.public_id;save();done++;next()})
+      .catch(function(e){fail.push(id+": "+((e&&e.message)||"hata"));next()});
+  }
+  next();
+});
+
+/* ---------- KAYIT ---------- */
+var stream=null,rec=null,chunks=[],recTimer=null,lastBlobUrl="";
+$("#startBtn").onclick=function(){beginRec()};
+function beginRec(){
+  go("rec");
+  $("#count").textContent="";$("#recBadge").style.display="none";
+  var cs={video:{facingMode:"environment",width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false};
+  navigator.mediaDevices.getUserMedia(cs).then(function(st){
+    stream=st;$("#cam").srcObject=st;
+    try{var s=st.getVideoTracks()[0].getSettings();window.B360.cam=s}catch(e){}
+    countdown(3);
+  }).catch(function(){
+    navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(st){
+      stream=st;$("#cam").srcObject=st;countdown(3);
+    }).catch(function(){
+      alert("Kameraya erişilemedi. Safari'de kamera iznini kontrol et.");go("attract");
+    });
+  });
+}
+function countdown(n){
+  if(n>0){$("#count").textContent=n;setTimeout(function(){countdown(n-1)},1000);return}
+  $("#count").textContent="";
+  startRecording();
+}
+function pickMime(){
+  var list=["video/mp4;codecs=avc1","video/mp4","video/webm;codecs=vp9","video/webm"];
+  for(var i=0;i<list.length;i++){try{if(MediaRecorder.isTypeSupported(list[i]))return list[i]}catch(e){}}
+  return "";
+}
+function startRecording(){
+  chunks=[];
+  var mt=pickMime();
+  try{rec=mt?new MediaRecorder(stream,{mimeType:mt,videoBitsPerSecond:8000000}):new MediaRecorder(stream)}
+  catch(e){rec=new MediaRecorder(stream)}
+  rec.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};
+  rec.onstop=function(){stopCam();uploadVideo()};
+  rec.start(500);
+  var left=S.sure;
+  $("#recBadge").style.display="inline-flex";
+  $("#recLeft").textContent="KAYIT · "+left+" sn";
+  recTimer=setInterval(function(){
+    left--;
+    $("#recLeft").textContent="KAYIT · "+Math.max(0,left)+" sn";
+    if(left<=0){clearInterval(recTimer);try{rec.stop()}catch(e){}}
+  },1000);
+}
+function stopCam(){
+  try{if(stream)stream.getTracks().forEach(function(t){t.stop()})}catch(e){}
+  stream=null;$("#cam").srcObject=null;
+}
+function keepBlob(blob){try{if(lastBlobUrl)URL.revokeObjectURL(lastBlobUrl)}catch(e){}try{lastBlobUrl=URL.createObjectURL(blob)}catch(e){lastBlobUrl=""}}
+
+/* ---------- YÜKLEME ---------- */
+var curVid=null; /* {pid,ver,dur} */
+function uploadVideo(){
+  go("upload");
+  $("#upNote").textContent="Video buluta yükleniyor…";$("#upBar").style.width="10%";
+  var blob=new Blob(chunks,{type:chunks[0]?chunks[0].type:"video/webm"});
+  keepBlob(blob);
+  cldUpload(blob,"video",{folder:"booth360/"+evSlug(),tags:evSlug()+"-360"},function(p){$("#upBar").style.width=Math.round(10+80*p)+"%"})
+    .then(function(j){
+      curVid={pid:j.public_id,ver:j.version,dur:+j.duration||S.sure};
+      $("#upBar").style.width="100%";
+      muzikAcik=!!(S.muzikSec||Object.keys(S.tplMusic).length);
+      if(S.warm)warm(activeTpls()[0].id);
+      buildStyleGrid();go("style");
+    }).catch(function(e){upFail((e&&e.message)||"yanıt okunamadı")});
+}
+function upFail(m){
+  $("#upNote").textContent="Yüklenemedi: "+m+" — internete bak, BAŞLAT ile tekrar dene.";
+  setTimeout(function(){go("attract")},4000);
+}
+
+/* ---------- ŞABLON → SPEC → URL ---------- */
+var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
+function mkSpec(tid,vid){
+  var v=vid||curVid;if(!v)return null;
+  return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
+    l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
+    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,o:Object.assign({},S.flags,{tol:S.fxTol})};
+}
+/* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
+function fxProbe(cb){
+  var ids=["yildiz","kalp","konfeti","sparkle"],left=ids.length,ch=false;
+  ids.forEach(function(id){
+    var u="https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/video/upload/"+S.fxPath+"/"+id+".mp4";
+    fetch(u,{method:"HEAD",cache:"no-store"}).then(function(r){if(r.status===200&&!S.fxHave[id]){S.fxHave[id]=S.fxPath+"/"+id;ch=true}}).catch(function(){}).then(function(){if(--left===0){if(ch)save();if(cb)cb(ch)}});
+  });
+}
+try{fxProbe()}catch(e){}
+/* FX videosu yüklü değilse o şablon FX'siz kurulur (render kırılmasın) */
+function fxOk(tid){var t=E.byId(tid);if(!t.fx||S.fxMode==="off")return false;var key=S.fxMode==="alpha"?(t.fx+"_a"):t.fx;return !!(S.fxHave&&S.fxHave[key])}
+function tplUrl(tid,vid){var sp=mkSpec(tid,vid);return sp?E.url(sp):""}
+function pageUrl(tid,vid){var sp=mkSpec(tid,vid);return sp?(pageBase()+"v.html#"+E.encode(sp)):""}
+function warm(tid){var u=tplUrl(tid);if(!u)return;try{fetch(u,{method:"HEAD",cache:"no-store"}).catch(function(){})}catch(e){}}
+/* Cloudinary "hazırlanıyor" (423) yoklaması */
+function ready(url,onStat){
+  return new Promise(function(res,rej){
+    var t0=Date.now(),n=0;
+    (function tick(){
+      n++;if(onStat)onStat(n,Math.round((Date.now()-t0)/1000));
+      var p;try{p=fetch(url,{method:"HEAD",cache:"no-store"})}catch(e){p=Promise.reject(e)}
+      p.then(function(r){
+        if(r.status===200||r.status===206){res(r);return}
+        if(r.status===423||r.status===425||r.status===429||r.status>=500){retry();return}
+        rej(new Error("HTTP "+r.status));
+      }).catch(function(){retry()});
+      function retry(){if(Date.now()-t0>150000){rej(new Error("zaman aşımı"));return}setTimeout(tick,n<3?1500:3000)}
+    })();
+  });
+}
+function speedBar(sp){
+  var a=E.bar(sp),h='<div class="sb">';
+  a.forEach(function(s){h+='<i class="'+(s.rev?"rev":(s.flash?"flash":s.k))+'" style="width:'+Math.max(1.5,s.w*100)+'%"></i>'});
+  return h+'</div>';
+}
+function buildStyleGrid(){
+  var g=$("#styleGrid");g.innerHTML="";
+  activeTpls().forEach(function(t){
+    var sp=mkSpec(t.id),P=E.plan(sp);
+    var c=document.createElement("button");c.className="stcard";c.setAttribute("data-tpl",t.id);
+    c.innerHTML='<div class="e">'+t.e+'</div><div class="n">'+t.n+'</div><div class="d">'+t.d+'</div>'+speedBar(sp)+
+      '<div class="t">≈'+Math.round(P.out)+' sn'+(sp.m?" · 🎵":"")+(sp.x!=="off"?" · FX":"")+'</div>';
+    c.onclick=function(){openPreview(t)};
+    g.appendChild(c);
+  });
+  var mc=$("#muzikChip"),has=!!(S.muzikSec||Object.keys(S.tplMusic).length);
+  mc.hidden=!has;
+  mc.classList.toggle("on",muzikAcik);
+  mc.textContent=muzikAcik?"🎵 Müzik: AÇIK":"🎵 Müzik: kapalı";
+}
+$("#muzikChip").onclick=function(){muzikAcik=!muzikAcik;buildStyleGrid()};
+var prevTok=0;
+function openPreview(t){
+  selTpl=t;var tok=++prevTok;
+  var sp=mkSpec(t.id),url=E.url(sp);lastUrl=url;
+  $("#prevName").textContent=t.e+" "+t.n+(sp.m?" · 🎵":"");
+  go("prev");
+  var v=$("#prevVid"),busy=$("#prevBusy"),stat=$("#prevStat"),use=$("#useBtn");
+  use.disabled=true;busy.style.display="flex";busy.querySelector(".lede").textContent="Edit hazırlanıyor…";stat.textContent="";
+  v.removeAttribute("src");try{v.load()}catch(e){}
+  ready(url,function(n,sec){if(tok!==prevTok)return;stat.textContent=sec+" sn"+(sec>=20?" · ilk hazırlık 30–60 sn sürebilir":"")}).then(function(){
+    if(tok!==prevTok)return;
+    var opened=false;function openIt(){if(tok!==prevTok||opened)return;opened=true;busy.style.display="none";use.disabled=false}
+    v.onloadeddata=openIt;v.onloadedmetadata=openIt;
+    v.onerror=function(){if(tok!==prevTok||opened)return;busy.querySelector(".lede").textContent="Önizleme oynatılamadı — yine de kullanabilirsin.";stat.textContent="";use.disabled=false};
+    v.src=url;v.play&&v.play().catch(function(){});
+    setTimeout(openIt,6000); /* iOS bazen veri yüklemez; hazır olan videoyu bekletme */
+  }).catch(function(e){
+    if(tok!==prevTok)return;
+    busy.querySelector(".lede").textContent="Bu edit hazırlanamadı — başka şablon dene.";
+    stat.textContent=(e&&e.message)||"";
+  });
+}
+$("#otherBtn").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}go("style")};
+$("#useBtn").onclick=function(){
+  if(!selTpl)return;
+  lastUrl=tplUrl(selTpl.id);lastPage=pageUrl(selTpl.id);
+  var q=S.qrMod==="mp4"?lastUrl:lastPage;
+  $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
+  drawQR(q);
+  go("done");
+};
+$("#yenidenBtn").onclick=function(){curVid=null;go("attract")};
+$("#againBtn").onclick=function(){curVid=null;$("#prevVid").removeAttribute("src");go("attract")};
+
+/* ---------- KALİBRASYON ---------- */
+var calT1=-1,calT2=-1,calTimer=null;
+function openCal(){
+  if(!lastBlobUrl){alert("Önce bir deneme çekimi yap ya da 'Video dosyasıyla' seç.");return}
+  calT1=-1;calT2=-1;
+  var v=$("#calVid");v.src=lastBlobUrl;v.currentTime=0;v.play&&v.play().catch(function(){});
+  clearInterval(calTimer);calTimer=setInterval(function(){$("#calTime").textContent=(v.currentTime||0).toFixed(1)},100);
+  calVals();go("cal");
+}
+function calVals(){
+  var h="";
+  if(calT1>=0)h+="İlk yüz anı: <b>"+calT1.toFixed(1)+" sn</b>";else h+="İlk yüz anı: —";
+  h+="<br>";
+  if(calT2>=0)h+="Tur süresi: <b>"+(calT2-calT1).toFixed(1)+" sn</b>";else h+="Tur süresi: —"+(calT1>=0?" (ikinci kez öne gelince bas)":"");
+  $("#calVals").innerHTML=h;
+  $("#calFace").textContent=calT1<0?"YÜZ TAM ÖNDE":(calT2<0?"YÜZ TEKRAR ÖNDE":"TAMAM");
+}
+$("#calBtn").onclick=openCal;
+$("#calFileBtn").onclick=function(){$("#calFile").click()};
+$("#calFile").addEventListener("change",function(){var f=this.files&&this.files[0];this.value="";if(!f)return;keepBlob(f);openCal()});
+$("#calFace").onclick=function(){
+  var t=$("#calVid").currentTime||0;
+  if(calT1<0){calT1=t}else if(calT2<0){if(t-calT1>1.5)calT2=t;else{calT1=t}}
+  calVals();
+};
+$("#calReset").onclick=function(){calT1=-1;calT2=-1;$("#calVid").currentTime=0;calVals()};
+function closeCal(){clearInterval(calTimer);try{$("#calVid").pause()}catch(e){}fillAdmin();go("admin")}
+$("#calSave").onclick=function(){
+  if(calT1>=0)S.yuzSn=Math.round(calT1*10)/10;
+  if(calT2>=0)S.turSn=Math.round((calT2-calT1)*10)/10;
+  save();closeCal();
+};
+$("#calCancel").onclick=closeCal;
+
+/* ---------- QR ---------- */
+function drawQR(text){
+  var cv=$("#qrCanvas"),x=cv.getContext("2d");
+  x.fillStyle="#F6F0E6";x.fillRect(0,0,cv.width,cv.height);
+  try{
+    var q=qrcode(0,"M");q.addData(text);q.make();
+    var n=q.getModuleCount(),cell=Math.floor(cv.width/(n+4)),off=Math.floor((cv.width-cell*n)/2);
+    x.fillStyle="#12100E";
+    for(var r=0;r<n;r++)for(var c=0;c<n;c++)if(q.isDark(r,c))x.fillRect(off+c*cell,off+r*cell,cell,cell);
+  }catch(e){
+    x.fillStyle="#12100E";x.font="20px sans-serif";x.textAlign="center";
+    x.fillText("QR hazırlanamadı",cv.width/2,cv.height/2);
+  }
+}
+
+window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl,pageUrl:pageUrl,ready:ready,go:go,
+  setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
+  last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal};
+})();
+</script>
+</body>
+</html>
