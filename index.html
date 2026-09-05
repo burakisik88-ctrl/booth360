@@ -195,6 +195,9 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         <div class="fld"><div class="lbl">Kamera</div>
           <select id="fKam"><option value="user">Ön kamera (ekran misafire bakar)</option><option value="environment">Arka kamera</option></select></div>
       </div>
+      <div class="fld"><div class="lbl">Mod</div>
+        <select id="fMod"><option value="editli">Editli — şablonlu, bulutta edit (premium paket)</option><option value="editsiz">Editsiz — çekilen video olduğu gibi karekoda (temel paket)</option></select></div>
+      <div class="note">Editsiz modda bulutta hiçbir işlem yapılmaz (yalnız depolama/indirme); şablon ekranı atlanır, karekod hemen gelir. Editli mod her şablonda bulut işlem kredisi harcar.</div>
       <div class="fld"><div class="lbl">Kadraj</div>
         <select id="fKadraj"><option value="genis916">En geniş açı → 9:16, kenarlar bulanık (önerilen)</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select></div>
       <div class="note" id="camInfo"></div>
@@ -272,6 +275,12 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <label class="ck"><input type="checkbox" id="fkNoise"> Film greni (Noir)</label>
       <label class="ck"><input type="checkbox" id="fkDu"> FX ve müziği video süresine kırp (du_)</label>
       <div class="note">Canlı testte hata veren özellik buradan kapatılır; yeni sürüm beklemeden devam edilir.</div>
+    </div>
+    <div class="grp">
+      <h3>Tanı</h3>
+      <textarea id="taniTxt" readonly style="width:100%;height:90px;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:11px;padding:8px"></textarea>
+      <div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost mini" id="taniKopyala">Tanı kodunu kopyala</button><span class="note" id="taniNot"></span></div>
+      <div class="note">Bir şey çalışmadığında bu kodu kopyalayıp sohbete yapıştır; müzik, kamera ve son video adresi içinde.</div>
     </div>
     <div class="note" id="verNote"></div>
   </div>
@@ -384,7 +393,9 @@ function chain(spec){
   return parts.join("/");
 }
 function url(spec){
-  return "https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/"+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
+  var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
+  if(spec.t==="ham")return base+"v"+(spec.v||1)+"/"+spec.p+".mp4"; /* editsiz mod: çekilen video olduğu gibi, bulut işlemi yok */
+  return base+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
 }
 /* misafir kartı için hız şeridi: [{w:oran,k:slow|mid|fast,rev,flash}] */
 function bar(spec){
@@ -415,10 +426,10 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.2.4";
+var VER="v0.2.6";
 var E=B360E;
 function $(s){return document.querySelector(s)}
-var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",camLog:"",camPick:{},cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",camLog:"",camPick:{},mod:"editli",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1}};
@@ -451,7 +462,7 @@ function stem(name){
   try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}
   return s.replace(/ı/g,"i").replace(/[^a-z0-9_]+/g,"_").replace(/^_+|_+$/g,"").slice(0,40)||"fx";
 }
-function applyBrand(){$("#attractEvt").textContent=S.evt?S.evt:"15 saniyelik 360° video — çek, şablonunu seç, telefonuna al."}
+function applyBrand(){$("#attractEvt").textContent=(S.evt?S.evt:"15 saniyelik 360° video — çek, telefonuna al.")+(S.mod==="editsiz"?" · Editsiz mod":"")}
 applyBrand();
 function pageBase(){return location.href.split(/[?#]/)[0].replace(/[^\/]*$/,"")}
 function activeTpls(){
@@ -506,7 +517,7 @@ function cldUpload(file,kind,fields,onProg){
 
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
-  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";
+  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";$("#fMod").value=S.mod||"editli";
   $("#camInfo").textContent=(S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.")+(S.camLog?("  ·  Denenen: "+S.camLog):"");
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
   fs.value=String(S.sure);
@@ -519,11 +530,14 @@ function fillAdmin(){
   buildTplList();buildMuzikList();logoInfo();fxInfo();
   fxProbe(function(ch){if(ch)fxInfo()});
   $("#verNote").textContent="OBSKURA 360 · "+VER+" · PIN 1234 · Videolar: booth360/"+evSlug()+" · İzleme sayfası: "+pageBase()+"v.html";
+  try{$("#taniTxt").value=JSON.stringify({ver:VER,evt:S.evt,mod:S.mod,kamera:S.kamera,kadraj:S.kadraj,sure:S.sure,muzikler:S.muzikler,muzikSec:S.muzikSec,tplMusic:S.tplMusic,fxHave:S.fxHave,fxMode:S.fxMode,logo:S.logoPid,aktif:S.aktif,tur:S.turSn,yuz:S.yuzSn,flags:S.flags,lastCam:S.lastCam,camLog:S.camLog,lastUrl:lastUrl,lastPage:lastPage,ua:navigator.userAgent})}catch(e){}
 }
 $("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
 $("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
 $("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save()});
+$("#fMod").addEventListener("change",function(){S.mod=this.value;save();applyBrand()});
+$("#taniKopyala").onclick=function(){var t=$("#taniTxt");t.select();try{navigator.clipboard.writeText(t.value).then(function(){$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."})}catch(e){document.execCommand("copy");$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."}};
 $("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
 $("#fPreset").addEventListener("input",function(){S.cldPreset=this.value.trim();save()});
 $("#fQr").addEventListener("change",function(){S.qrMod=this.value;save()});
@@ -583,7 +597,15 @@ function buildMuzikList(){
     var sil=document.createElement("button");sil.className="btn ghost mini";sil.textContent="Sil";
     sil.onclick=function(){S.muzikler=S.muzikler.filter(function(x){return x.pid!==m.pid});if(S.muzikSec===m.pid)S.muzikSec=S.muzikler.length?S.muzikler[0].pid:"";
       Object.keys(S.tplMusic).forEach(function(k){if(S.tplMusic[k]===m.pid)delete S.tplMusic[k]});save();buildMuzikList();buildTplList()};
-    r.appendChild(nm);r.appendChild(sec);r.appendChild(sil);w.appendChild(r);
+    var tst=document.createElement("button");tst.className="btn ghost mini";tst.textContent="▶ Test";
+    tst.onclick=function(){ /* 1) parça buluttan çalıyor mu 2) sesli test klibi (sparkle FX + bu müzik) hazırlanıyor mu */
+      var st=document.createElement("div");st.className="note";st.textContent="Parça çalınıyor… (ses açık mı?)";r.appendChild(st);
+      var a=new Audio("https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/video/upload/"+m.pid+".mp3");a.play().catch(function(e){st.textContent="Parça çalınamadı: "+(e&&e.message||"hata")});
+      var tu="https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/video/upload/so_0,du_3/l_audio:"+m.pid.replace(/\//g,":")+",du_3.5/fl_layer_apply/"+S.fxPath+"/sparkle.mp4";
+      fetch(tu,{method:"HEAD",cache:"no-store"}).then(function(x){st.textContent+=" · Bulut ses katmanı testi: HTTP "+x.status+(x.status===200?" (tamam)":" (HATA)")}).catch(function(){st.textContent+=" · Bulut testi: bağlantı yok"});
+      setTimeout(function(){try{a.pause()}catch(e){}},6000);
+    };
+    r.appendChild(nm);r.appendChild(sec);r.appendChild(tst);r.appendChild(sil);w.appendChild(r);
   });
 }
 /* logo */
@@ -725,6 +747,12 @@ function uploadVideo(){
     .then(function(j){
       curVid={pid:j.public_id,ver:j.version,dur:+j.duration||S.sure};
       $("#upBar").style.width="100%";
+      if(S.mod==="editsiz"){ /* editsiz: şablon yok, ham video doğrudan karekoda */
+        selTpl={id:"ham",n:"Ham video",e:"🎥"};
+        lastUrl=tplUrl("ham");lastPage=pageUrl("ham");
+        $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
+        drawQR(S.qrMod==="mp4"?lastUrl:lastPage);go("done");return;
+      }
       muzikAcik=!!(S.muzikSec||Object.keys(S.tplMusic).length);
       if(S.warm)warm(activeTpls()[0].id);
       buildStyleGrid();go("style");
@@ -739,6 +767,7 @@ function upFail(m){
 var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
+  if(tid==="ham")return {c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur};
   return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
     x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:(S.kadraj==="genis916")?"g916":"",o:Object.assign({},S.flags,{tol:S.fxTol})};

@@ -144,7 +144,9 @@ function chain(spec){
   return parts.join("/");
 }
 function url(spec){
-  return "https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/"+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
+  var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
+  if(spec.t==="ham")return base+"v"+(spec.v||1)+"/"+spec.p+".mp4"; /* editsiz mod: çekilen video olduğu gibi, bulut işlemi yok */
+  return base+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
 }
 /* misafir kartı için hız şeridi: [{w:oran,k:slow|mid|fast,rev,flash}] */
 function bar(spec){
