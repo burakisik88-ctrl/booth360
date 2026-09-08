@@ -56,7 +56,23 @@ code{font-size:11px;color:var(--amber);word-break:break-all}
 "use strict";
 function $(s){return document.querySelector(s)}
 var S={};try{S=JSON.parse(localStorage.getItem("booth360.v1")||"{}")}catch(e){}
+/* Ayar bağlantısıyla açılırsa (booth ile aynı biçim) ayarları al ve kaydet —
+   böylece tek link hem kurulumu yapar hem kontrolü çalıştırır. */
+var AYAR_GELDI=false;
+(function(){
+  try{
+    var m=/[#&]ayar=([^&]+)/.exec(location.hash||"");if(!m)return;
+    var j=JSON.parse(decodeURIComponent(escape(atob(m[1].replace(/-/g,"+").replace(/_/g,"/")))));
+    if(!j||typeof j!=="object")return;
+    Object.keys(j).forEach(function(k){if(k!=="sayac")S[k]=j[k]});
+    try{localStorage.setItem("booth360.v1",JSON.stringify(S))}catch(e){}
+    AYAR_GELDI=true;
+    try{history.replaceState(null,"",location.pathname)}catch(e){}
+  }catch(e){}
+})();
 var CLD=S.cldName||"rqhgtbvd", PRE=S.cldPreset||"booth_qr", FXP=S.fxPath||"booth360/_fx";
+if(AYAR_GELDI){var sb=document.getElementById("sub");
+  sb.innerHTML='<b style="color:var(--ok)">Ayarlar bağlantıdan yüklendi</b> — bu telefon artık «'+String(S.evt||"Etkinlik").replace(/</g,"&lt;")+'» kurulumuyla çalışıyor.<br>'+sb.innerHTML}
 var L=$("#list"),rap=[],hata=0,uyari=0;
 function base(){return "https://res.cloudinary.com/"+encodeURIComponent(CLD)+"/video/upload/"}
 function slug(){var s=(S.evt||"etkinlik").toString().toLowerCase();try{s=s.normalize("NFD").replace(/[̀-ͯ]/g,"")}catch(e){}

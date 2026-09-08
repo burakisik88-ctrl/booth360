@@ -114,6 +114,31 @@ with sync_playwright() as p:
     ok("özet 'sahaya çıkma' uyarısı veriyor", "HATA" in ozet2 and "çıkma" in ozet2, ozet2[:70])
     ok("bozuk senaryoda da JS hatası yok", not e2, "; ".join(e2)[:160])
     ctx2.close()
+
+    # ---------- C) AYAR BAĞLANTISIYLA AÇILIŞ: hafızası bos telefon tek linkle kurulur ----------
+    MODE.update(upload_ok=True, fx_ok=True, audio_ok=True)
+    import base64
+    payload = dict(S_OK); payload["evt"] = "Ortak Denemesi"; payload["deneme"] = 1
+    blob = base64.b64encode(json.dumps(payload, ensure_ascii=False).encode()).decode().replace("+", "-").replace("/", "_")
+    ctx3 = br.new_context(viewport={"width": 430, "height": 932}, permissions=["camera"])
+    ctx3.route("**/*cloudinary.com/**", route)
+    e3 = []
+    p3 = ctx3.new_page()
+    p3.on("pageerror", lambda e: e3.append(str(e)))
+    p3.add_init_script("try{localStorage.removeItem('booth360.v1')}catch(e){}")
+    p3.goto(BASE + "t.html#ayar=" + blob); p3.wait_for_selector("#run")
+    ok("boş telefon: kontrol sayfası bağlantıdan ayarları yükledi",
+       p3.evaluate("(JSON.parse(localStorage.getItem('booth360.v1')||'{}')).evt") == "Ortak Denemesi")
+    ok("kontrol sayfası ayarın yüklendiğini yazıyor", "bağlantıdan yüklendi" in (p3.text_content("#sub") or ""))
+    ok("bağlantıdaki ayar adres çubuğunda kalmıyor", "#ayar=" not in p3.evaluate("location.hash"))
+    p3.click("#run"); p3.wait_for_selector("#sum:not([hidden])", timeout=180000)
+    r3 = p3.evaluate("""Array.from(document.querySelectorAll('#list .it')).map(function(d){
+        return {ad:d.querySelector('.nm').textContent, dur:d.className.replace('it','').trim()}})""")
+    ok("bağlantıyla gelen kurulumda kontrol temiz geçti", not [x for x in r3 if x["dur"] == "err"],
+       "; ".join(x["ad"] for x in r3 if x["dur"] == "err")[:120])
+    ok("deneme modu uyarısı çıktı", any("DENEME" in x["ad"] for x in r3))
+    ok("bağlantı açılışında JS hatası yok", not e3, "; ".join(e3)[:160])
+    ctx3.close()
     br.close()
 
 bad = [r for r in res if not r[1]]
