@@ -151,6 +151,46 @@ with sync_playwright() as p:
     ok("vazgeç: kuyruk boşaldı, ekran kilidi açıldı", t["bekleyen"] is False and t["mesgul"] is False)
     UP["fail"] = 0
 
+    # ---- 10b) ŞABLONSUZ KART + LOGO ZORUNLULUĞU + BAŞA DÖN
+    pg.evaluate("B360.S.paket='efektli';B360.S.mod='editli';B360.S.logoPid='';B360.S.logoZorunlu=0;B360.S.hamKart=1;B360.S.kadraj='genis916d';B360.save()")
+    pg.click("#startBtn"); pg.wait_for_selector("#s-style.on", timeout=25000)
+    ok("şablon ekranında 'Şablonsuz' kartı var (misafir mecbur değil)",
+       pg.evaluate("!!document.querySelector('#styleGrid .stcard[data-tpl=ham]')"))
+    hu = pg.evaluate("B360.tplUrl('ham')")
+    ok("logo zorunlu değil → şablonsuz video HİÇ işlenmiyor (0 kredi)",
+       "/video/upload/v" in hu and "l_" not in hu.split("/video/upload/")[1], hu[-60:])
+
+    pg.evaluate("B360.S.logoPid='booth360/_logo/yopi';B360.S.logoZorunlu=1;B360.save()")
+    hu2 = pg.evaluate("B360.tplUrl('ham')")
+    ok("logo zorunlu → şablonsuz videoya logo basılıyor", "l_booth360:_logo:yopi" in hu2)
+    ok("logo zorunlu → 9:16 bandı da uygulanıyor", "c_pad,w_1080,h_1920" in hu2)
+    ok("şablonsuzda efekt/müzik/hız zinciri YOK",
+       "e_accelerate" not in hu2 and "l_audio" not in hu2 and "fl_splice" not in hu2)
+
+    ok("kadraj: düz bant (blur yok)", "b_rgb:0D0B0A" in hu2 and "b_blurred" not in hu2, hu2.split("/")[6] if len(hu2.split("/"))>6 else "")
+    pg.evaluate("B360.S.kadraj='genis916k';B360.save()")
+    ok("kadraj: 'bant yok' seçilince kırpıyor", "c_fill,w_1080,h_1920" in pg.evaluate("B360.tplUrl('ham')"))
+    pg.evaluate("B360.S.kadraj='genis916d';B360.save()")
+
+    # şablonsuz kartı gerçekten çalışıyor mu (önizleme → karekod)
+    pg.evaluate("B360.buildStyleGrid()")
+    pg.click("#styleGrid .stcard[data-tpl=ham]"); pg.wait_for_selector("#s-prev.on")
+    pg.wait_for_function("!document.querySelector('#useBtn').disabled", timeout=30000)
+    ok("şablonsuz önizleme açıldı", True)
+    ok("önizleme ekranında 'Başa dön' düğmesi var",
+       pg.evaluate("getComputedStyle(document.querySelector('#prevBasa')).display") != "none")
+    pg.click("#prevBasa"); pg.wait_for_selector("#s-attract.on", timeout=8000)
+    ok("'Başa dön' sayaç beklemeden başa döndürdü", True)
+
+    pg.evaluate("B360.S.hamKart=0;B360.save()")
+    pg.click("#startBtn"); pg.wait_for_selector("#s-style.on", timeout=25000)
+    ok("panelden kapatılınca 'Şablonsuz' kartı çıkmıyor",
+       pg.evaluate("!document.querySelector('#styleGrid .stcard[data-tpl=ham]')"))
+    ok("şablon ekranında da 'Başa dön' var",
+       pg.evaluate("getComputedStyle(document.querySelector('#styleBasa')).display") != "none")
+    pg.click("#styleBasa"); pg.wait_for_selector("#s-attract.on", timeout=8000)
+    pg.evaluate("B360.S.hamKart=1;B360.S.logoZorunlu=0;B360.S.logoPid='';B360.save()")
+
     # ---- 11) GALERİ ADRESİ doğru kuruluyor mu
     gu = pg.evaluate("B360.galeriUrl()")
     ok("galeri adresi doğru", gu.endswith("g.html#c=rqhgtbvd&t=saha-testi-360&e=Saha%20Testi"), gu[-58:])

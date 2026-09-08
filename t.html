@@ -126,6 +126,16 @@ function plan(spec){
   var F=facePick(D,spec.f,spec.r),segs=norm(tpl.w(D,F),D);
   return {tpl:tpl,o:o,D:D,F:F,segs:segs,out:outDur(segs,o)};
 }
+/* geniş (3:4) kaynağı 9:16'ya oturtma yolu:
+   g916  = bulanık bant (eski varsayılan — bant çok baskın oluyordu)
+   g916d = düz koyu bant, logo yeri kalır ama ekranı kesmez  ← varsayılan
+   g916k = bant yok, kenarlardan kırpar (tam ekran) */
+function kadraj(k){
+  if(k==="g916")return "c_pad,w_1080,h_1920,b_blurred:400:15";
+  if(k==="g916d")return "c_pad,w_1080,h_1920,b_rgb:0D0B0A";
+  if(k==="g916k")return "c_fill,w_1080,h_1920,g_center";
+  return "";
+}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -134,7 +144,7 @@ function chain(spec){
     else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
-  if(spec.k==="g916")parts.push("c_pad,w_1080,h_1920,b_blurred:400:15"); /* geniş (3:4) kaynak → 9:16, kenarlar bulanık — canlıda doğrulandı */
+  var kp=kadraj(spec.k);if(kp)parts.push(kp);
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
     var fp=lid(spec.fp||"booth360/_fx");
     if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
@@ -148,9 +158,24 @@ function chain(spec){
   parts.push("q_auto");
   return parts.join("/");
 }
+/* ŞABLONSUZ: logo zorunlu değilse hiç bulut işlemi yok (sıfır kredi, anında hazır).
+   Logo zorunluysa yalnız kadraj + logo basılır — şablon, efekt, müzik yok. */
+function hamChain(spec){
+  var parts=[],kp=kadraj(spec.k);
+  if(kp)parts.push(kp);
+  parts.push("l_"+lid(spec.l));
+  parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
+  parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  parts.push("q_auto");
+  return parts.join("/");
+}
+function hamIslem(spec){var o=flagsOf(spec);return !!(spec.t==="ham"&&o.logo&&spec.l)}
 function url(spec){
   var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
-  if(spec.t==="ham")return base+"v"+(spec.v||1)+"/"+spec.p+".mp4"; /* editsiz mod: çekilen video olduğu gibi, bulut işlemi yok */
+  if(spec.t==="ham"){
+    if(hamIslem(spec))return base+hamChain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
+    return base+"v"+(spec.v||1)+"/"+spec.p+".mp4"; /* dokunulmamış ham video */
+  }
   return base+chain(spec)+"/v"+(spec.v||1)+"/"+spec.p+".mp4";
 }
 /* misafir kartı için hız şeridi: [{w:oran,k:slow|mid|fast,rev,flash}] */
@@ -176,7 +201,7 @@ function decode(str){
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
 }
-return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid};
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj};
 })();
 </script>
 <script>

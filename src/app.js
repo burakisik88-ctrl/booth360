@@ -1,14 +1,14 @@
 (function(){
 "use strict";
-var VER="v0.5.0";
+var VER="v0.6.0";
 var E=B360E;
 function $(s){return document.querySelector(s)}
-var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
+var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1},
   kvkk:"Bu alanda çekilen videolar etkinlik boyunca saklanır ve yalnızca karekod ile size verilir.",
-  otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0,
+  otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0, logoZorunlu:0, hamKart:1,
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -54,6 +54,8 @@ function ayarUygula(txt){
     save();return "";
   }catch(e){return "Okunamadı: "+((e&&e.message)||"hata")}
 }
+/* eski kurulumda kadraj bulanık banttı; bant ekranı kesiyordu → düz banta çevir (bir kez) */
+if(S.kadraj==="genis916"&&!S.k2){S.kadraj="genis916d";S.k2=1;save()}
 var cur="attract";
 /* --- EKRAN UYANIK KALSIN: iPhone çekim ortasında ekranı kapatmasın --- */
 var wl=null;
@@ -109,7 +111,7 @@ var gorulenUrl={};
 function tlKredi(){return +S.krediTl||21.31}
 function snTl(sn){return tlKredi()*(sn/250)}
 function maliyetEkle(u,sn){
-  if(!u||gorulenUrl[u]||S.deneme)return;
+  if(!u||!(+sn>0)||gorulenUrl[u]||S.deneme)return;
   gorulenUrl[u]=1;
   var k=evSlug();S.sayac=S.sayac||{};
   var o=S.sayac[k]||{cekim:0,teslim:0,gun:{}};
@@ -167,6 +169,9 @@ function pageBase(){
   if(/^https?:\/\//i.test(h))return h.replace(/[^\/]*$/,"");
   return SITE_VARSAYILAN;
 }
+var KADRAJ={genis916:"g916",genis916d:"g916d",genis916k:"g916k"};
+function kKodu(){return KADRAJ[S.kadraj]||""}
+function logoVar(){return !!(S.logoZorunlu&&S.logoPid)}
 function activeTpls(){
   var a=E.TEMPLATES.filter(function(t){return S.aktif.indexOf(t.id)>=0});
   return a.length?a:E.TEMPLATES.slice();
@@ -237,6 +242,7 @@ function fillAdmin(){
   $("#fTur").value=S.turSn;$("#fYuz").value=S.yuzSn;
   $("#fLogoPoz").value=S.logoPoz;$("#fLogoW").value=String(S.logoW);
   $("#fFx").value=S.fxMode;$("#fTol").value=S.fxTol;
+  $("#fLogoZor").value=S.logoZorunlu?"1":"0";$("#fHamKart").value=(S.hamKart===0)?"0":"1";logoZorNot();
   $("#fkWarm").checked=!!S.warm;$("#fkDbl").checked=!!S.flags.dbl;$("#fkZoom").checked=!!S.flags.zoom;
   $("#fkFlash").checked=!!S.flags.flash;$("#fkNoise").checked=!!S.flags.noise;$("#fkDu").checked=!!S.flags.du;
   buildTplList();buildMuzikList();logoInfo();fxInfo();
@@ -313,6 +319,16 @@ $("#yedekYukle").onclick=function(){
 $("#fTur").addEventListener("change",function(){S.turSn=Math.max(2,Math.min(60,+this.value||10));this.value=S.turSn;save()});
 $("#fYuz").addEventListener("change",function(){S.yuzSn=Math.max(0,Math.min(60,+this.value||0));this.value=S.yuzSn;save()});
 $("#fLogoPoz").addEventListener("change",function(){S.logoPoz=this.value;save()});
+function logoZorNot(){
+  var n=$("#logoZorNot");if(!n)return;
+  if(!S.logoPid){n.className="note err";n.textContent="Logo yüklü değil — zorunlu seçsen de basılamaz.";return}
+  n.className="note";
+  n.textContent=S.logoZorunlu
+    ? "Şablonsuz videoya da logo basılır. Bu, o videoyu bulut işleminden geçirir: ≈"+snTl(S.sure).toFixed(2)+" TL/misafir. Müşteri \u201cherkesin videosunda logo olsun\u201d diyorsa bunu seç."
+    : "Şablonsuz seçen misafir videoyu logosuz ve bulut maliyeti olmadan alır (0 TL, anında).";
+}
+$("#fLogoZor").addEventListener("change",function(){S.logoZorunlu=this.value==="1"?1:0;save();logoZorNot()});
+$("#fHamKart").addEventListener("change",function(){S.hamKart=this.value==="1"?1:0;save()});
 $("#fLogoW").addEventListener("change",function(){S.logoW=this.value;save()});
 $("#fFx").addEventListener("change",function(){S.fxMode=this.value;save()});
 $("#fTol").addEventListener("change",function(){S.fxTol=Math.max(0,Math.min(100,+this.value||25));this.value=S.fxTol;save()});
@@ -383,10 +399,10 @@ $("#logoBtn").onclick=function(){$("#logoFile").click()};
 $("#logoFile").addEventListener("change",function(){
   var f=this.files&&this.files[0];this.value="";if(!f)return;
   var n=$("#logoInfo");n.className="note";n.textContent="Logo yükleniyor…";
-  cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){S.logoPid=j.public_id;save();logoInfo()})
+  cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){S.logoPid=j.public_id;save();logoInfo();logoZorNot()})
     .catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
 });
-$("#logoDel").onclick=function(){S.logoPid="";save();logoInfo()};
+$("#logoDel").onclick=function(){S.logoPid="";save();logoInfo();logoZorNot()};
 /* FX */
 function fxInfo(){
   var n=$("#fxInfo"),h=Object.keys(S.fxHave||{});
@@ -578,10 +594,13 @@ $("#upVazgec").onclick=function(){bekleyen=null;mesgul=false;recBusy=false;go("a
 var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
-  if(tid==="ham")return {c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur};
+  if(tid==="ham")return {c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
+    l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,
+    k:logoVar()?kKodu():"",              /* logo basılmıyorsa videoya hiç dokunulmaz */
+    o:Object.assign({},S.flags,{logo:1})};
   return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
-    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:(S.kadraj==="genis916")?"g916":"",o:Object.assign({},S.flags,{tol:S.fxTol})};
+    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})};
 }
 /* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
 function fxProbe(cb){
@@ -600,7 +619,7 @@ function fxOk(tid){
 }
 function tplUrl(tid,vid){var sp=mkSpec(tid,vid);return sp?E.url(sp):""}
 function pageUrl(tid,vid){var sp=mkSpec(tid,vid);return sp?(pageBase()+"v.html#"+E.encode(sp)):""}
-function warm(tid){var u=tplUrl(tid);if(!u)return;try{var sp=mkSpec(tid);maliyetEkle(u,sp?E.plan(sp).out:0)}catch(e){}
+function warm(tid){var u=tplUrl(tid);if(!u)return;try{var sp=mkSpec(tid);maliyetEkle(u,(sp&&tid!=="ham")?E.plan(sp).out:0)}catch(e){}
   try{fetch(u,{method:"HEAD",cache:"no-store"}).catch(function(){})}catch(e){}}
 /* Cloudinary "hazırlanıyor" (423) yoklaması */
 function ready(url,onStat){
@@ -633,6 +652,16 @@ function buildStyleGrid(){
     c.onclick=function(){openPreview(t)};
     g.appendChild(c);
   });
+  if(S.hamKart!==0&&paketOf()!=="editsiz"){ /* misafir şablon seçmek zorunda kalmasın */
+    var hc=document.createElement("button");hc.className="stcard";hc.setAttribute("data-tpl","ham");
+    var hs=mkSpec("ham"),isl=hs&&E.hamIslem(hs);
+    hc.innerHTML='<div class="e">🎬</div><div class="n">Şablonsuz</div>'+
+      '<div class="d">Çekildiği gibi — efekt yok, en hızlısı</div>'+
+      '<div class="sb"><i class="mid" style="width:100%"></i></div>'+
+      '<div class="t">≈'+Math.round((curVid&&curVid.dur)||S.sure)+' sn'+(isl?" · logo":"")+'</div>';
+    hc.onclick=function(){openPreview({id:"ham",n:"Şablonsuz",e:"🎬"})};
+    g.appendChild(hc);
+  }
   var mc=$("#muzikChip"),has=!!(S.muzikSec||Object.keys(S.tplMusic).length);
   mc.hidden=!has;
   mc.classList.toggle("on",muzikAcik);
@@ -643,7 +672,7 @@ var prevTok=0;
 function openPreview(t){
   selTpl=t;var tok=++prevTok;
   var sp=mkSpec(t.id),url=E.url(sp);lastUrl=url;
-  maliyetEkle(url,E.plan(sp).out);
+  maliyetEkle(url,(t.id==="ham")?(E.hamIslem(sp)?(+sp.d||0):0):E.plan(sp).out);
   $("#prevName").textContent=t.e+" "+t.n+(sp.m?" · 🎵":"");
   go("prev");
   var v=$("#prevVid"),busy=$("#prevBusy"),stat=$("#prevStat"),use=$("#useBtn");
@@ -672,6 +701,8 @@ $("#useBtn").onclick=function(){
   go("done");
 };
 $("#yenidenBtn").onclick=function(){curVid=null;go("attract")};
+$("#styleBasa").onclick=function(){curVid=null;go("attract")};
+$("#prevBasa").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}curVid=null;go("attract")};
 $("#againBtn").onclick=function(){curVid=null;$("#prevVid").removeAttribute("src");go("attract")};
 $("#qrKopya").onclick=function(){
   var t=$("#qrAdres").textContent||"",b=$("#qrKopya");
@@ -738,6 +769,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,sayacMetin:sayacMetin,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();

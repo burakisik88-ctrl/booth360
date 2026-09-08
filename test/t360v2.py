@@ -65,7 +65,9 @@ with sync_playwright() as p:
     pg.click("#startBtn")
     pg.wait_for_selector("#s-style.on", timeout=25000)
     cards = pg.query_selector_all("#styleGrid .stcard")
-    ok("6 şablon kartı", len(cards) == 6, f"{len(cards)} kart")
+    tpl_cards = [c for c in cards if c.get_attribute("data-tpl") != "ham"]
+    ok("6 şablon kartı + 'Şablonsuz' seçeneği", len(tpl_cards) == 6 and len(cards) == 7,
+       f"{len(tpl_cards)} şablon + {len(cards)-len(tpl_cards)} şablonsuz")
     ok("kartlarda hız şeridi", pg.evaluate("document.querySelectorAll('#styleGrid .sb i').length") >= 20)
     ok("müzik çipi açık", pg.evaluate("document.querySelector('#muzikChip').textContent").endswith("AÇIK"))
     warm_url = pg.evaluate("B360.tplUrl('yildiz')")
@@ -78,7 +80,7 @@ with sync_playwright() as p:
     u = urls["yildiz"]
     ok("yildiz: 4 splice + ¼× + FX yeşil perde + logo + müzik du_ + q_auto",
        u.count(",fl_splice/") == 4 and "fl_splice,fl_layer_apply" not in u and ",fl_splice/e_accelerate:-50/" in u and "e_make_transparent:25,co_rgb:00ff00" in u
-       and "l_booth360:_logo:yopi/c_scale,w_0.22,fl_relative/fl_layer_apply,g_north_east" in u and "l_audio:booth360:_muzik:track1,du_" in u and "c_pad,w_1080,h_1920,b_blurred:400:15" in u and u.endswith("/q_auto/v1725500000/booth360/deneme-gecesi/abc123.mp4"))
+       and "l_booth360:_logo:yopi/c_scale,w_0.22,fl_relative/fl_layer_apply,g_north_east" in u and "l_audio:booth360:_muzik:track1,du_" in u and "c_pad,w_1080,h_1920,b_rgb:0D0B0A" in u and "b_blurred" not in u and u.endswith("/q_auto/v1725500000/booth360/deneme-gecesi/abc123.mp4"))
     ok("kalp: şablona özel müzik (track2)", "l_audio:booth360:_muzik:track2,du_" in urls["kalp"])
     ok("konfeti: flaş + geri sarım", "e_brightness:90" in urls["konfeti"] and "e_reverse" in urls["konfeti"])
     ok("noir: gri + FX yok + gren kapalı", "e_grayscale" in urls["noir"] and "_fx:" not in urls["noir"] and "e_noise" not in urls["noir"])

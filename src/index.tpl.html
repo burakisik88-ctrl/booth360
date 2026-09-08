@@ -33,7 +33,13 @@ video{background:#000}
 #cam.mirror{transform:scaleX(-1)}
 #recUi{position:relative;z-index:2}
 #count{font-family:var(--disp);font-size:clamp(120px,30vw,300px);color:var(--paper);text-shadow:0 8px 60px rgba(0,0,0,.6)}
-#recHint{position:absolute;top:12%;left:0;right:0;text-align:center;font-family:var(--ui);font-weight:600;font-size:clamp(16px,4.4vw,24px);color:var(--paper);text-shadow:0 2px 18px rgba(0,0,0,.85);padding:0 24px;line-height:1.35}
+#recHint{position:fixed;top:calc(env(safe-area-inset-top,0px) + 7vh);left:50%;transform:translateX(-50%);
+  width:max-content;max-width:min(560px,86vw);z-index:3;text-align:center;
+  font-family:var(--ui);font-weight:600;font-size:clamp(15px,4vw,21px);line-height:1.4;color:var(--paper);
+  background:rgba(18,16,14,.58);border:1px solid rgba(243,237,228,.16);border-radius:22px;
+  padding:13px 22px;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  box-shadow:0 10px 40px rgba(0,0,0,.45);text-wrap:balance}
+#recHint:empty{display:none}
 #recBadge{display:none;align-items:center;gap:10px;background:rgba(20,16,13,.72);border:1px solid var(--line);border-radius:999px;padding:12px 22px;font-weight:600}
 #recBadge i{width:14px;height:14px;border-radius:50%;background:#e5484d;animation:bl 1s infinite}
 @keyframes bl{50%{opacity:.25}}
@@ -140,6 +146,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
   <div class="row">
     <button class="chip" id="muzikChip" hidden>🎵 Müzik</button>
     <button class="btn ghost mini" id="yenidenBtn">Yeniden çek</button>
+    <button class="btn ghost mini" id="styleBasa">Başa dön</button>
   </div>
 </section>
 
@@ -153,6 +160,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
   <div class="row">
     <button class="btn" id="useBtn" disabled>Bunu kullan</button>
     <button class="btn ghost" id="otherBtn">Başka şablon</button>
+    <button class="btn ghost mini" id="prevBasa">Başa dön</button>
   </div>
 </section>
 
@@ -216,7 +224,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         </select></div>
       <div class="note" id="paketNot"></div>
       <div class="fld"><div class="lbl">Kadraj</div>
-        <select id="fKadraj"><option value="genis916">En geniş açı → 9:16, kenarlar bulanık (önerilen)</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select></div>
+        <select id="fKadraj"><option value="genis916d">En geniş açı → 9:16, düz koyu bant (önerilen)</option><option value="genis916k">En geniş açı → 9:16, bant yok — kenarlardan kırpar</option><option value="genis916">En geniş açı → 9:16, bulanık bant</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select><div class="note">Kamera geniş (3:4) çekiyor, video 9:16 isteniyor. <b>Düz bant:</b> hiçbir şey kırpılmaz, alt-üstte logo için sakin bir alan kalır. <b>Bant yok:</b> tam ekran görüntü ama kenarlardan yaklaşık dörtte bir kırpılır. <b>Bulanık bant:</b> eski hal, bant baskın çıkıyordu.</div></div>
       <div class="note" id="camInfo"></div>
     </div>
     <div class="grp">
@@ -250,6 +258,18 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
           <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option></select></div>
         <div class="fld"><div class="lbl">Boyut</div>
           <select id="fLogoW"><option value="0.16">Küçük</option><option value="0.22">Orta</option><option value="0.30">Büyük</option></select></div>
+      </div>
+      <div class="fld"><div class="lbl">Logo kullanımı</div>
+        <select id="fLogoZor">
+          <option value="0">Sadece şablonlu videolarda</option>
+          <option value="1">HER videoda zorunlu — şablonsuzda da bassın</option>
+        </select></div>
+      <div class="note" id="logoZorNot"></div>
+      <div class="fld"><div class="lbl">Misafir "Şablonsuz" seçebilsin mi</div>
+        <select id="fHamKart">
+          <option value="1">Evet — şablon ekranında "Şablonsuz" kartı çıksın</option>
+          <option value="0">Hayır — misafir mutlaka bir şablon seçsin</option>
+        </select></div>
       </div>
     </div>
     <div class="grp" id="fxGrp">
