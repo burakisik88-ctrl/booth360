@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12100E">
+<title>OBSKURA 360</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600;800&display=swap">
+<style>
+:root{--ink:#12100E;--ink2:#1B1714;--line:rgba(243,237,228,.14);--line2:rgba(243,237,228,.3);--paper:#F6F0E6;--text:#F3EDE4;--muted:#A79688;--amber:#F2A93B;--slow:#6FB7FF;--rev:#C77DFF;
+  --disp:"Instrument Serif",Georgia,serif;--ui:"Figtree",-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--text);font-family:var(--ui);overflow:hidden}
+.screen{position:fixed;inset:0;display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center}
+.screen.on{display:flex}
+.eyebrow{font-family:var(--disp);letter-spacing:.34em;font-size:14px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+h1{font-family:var(--disp);font-style:italic;font-weight:400;font-size:clamp(34px,7vw,64px);margin:0 0 14px;color:var(--paper)}
+h1 em{color:var(--amber);font-style:italic}
+.lede{color:var(--muted);font-size:16px;line-height:1.6;max-width:520px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:70px;padding:0 36px;border:none;border-radius:999px;
+  font-family:var(--ui);font-weight:600;font-size:clamp(16px,2.6vw,20px);letter-spacing:.06em;background:var(--amber);color:#1A1206;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line2)}
+.btn.mini{min-height:46px;padding:0 16px;font-size:13px}
+.btn.lg{min-height:86px;font-size:clamp(18px,3vw,24px);width:min(460px,88vw)}
+.btn[disabled]{opacity:.45;cursor:default}
+.row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+#gearBtn{position:fixed;right:14px;bottom:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(27,23,20,.5);color:var(--muted);font-size:20px;z-index:40;cursor:pointer}
+video{background:#000}
+#cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
+#cam.mirror{transform:scaleX(-1)}
+#recUi{position:relative;z-index:2}
+#count{font-family:var(--disp);font-size:clamp(120px,30vw,300px);color:var(--paper);text-shadow:0 8px 60px rgba(0,0,0,.6)}
+#recHint{position:absolute;top:12%;left:0;right:0;text-align:center;font-family:var(--ui);font-weight:600;font-size:clamp(16px,4.4vw,24px);color:var(--paper);text-shadow:0 2px 18px rgba(0,0,0,.85);padding:0 24px;line-height:1.35}
+#recBadge{display:none;align-items:center;gap:10px;background:rgba(20,16,13,.72);border:1px solid var(--line);border-radius:999px;padding:12px 22px;font-weight:600}
+#recBadge i{width:14px;height:14px;border-radius:50%;background:#e5484d;animation:bl 1s infinite}
+@keyframes bl{50%{opacity:.25}}
+.spin{width:40px;height:40px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:sp 1s linear infinite;margin:0 auto 18px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.bar{width:min(420px,80vw);height:6px;border-radius:99px;background:var(--ink2);overflow:hidden;margin-top:16px}
+.bar i{display:block;height:100%;width:0;background:var(--amber);transition:width .2s}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;width:min(760px,94vw);max-height:58vh;overflow:auto;padding:4px}
+.stcard{border:1px solid var(--line);border-radius:16px;background:var(--ink2);padding:16px 10px 12px;cursor:pointer;color:var(--text);text-align:center}
+.stcard .e{font-size:34px}
+.stcard .n{font-weight:800;margin:8px 0 4px}
+.stcard .d{font-size:12px;color:var(--muted);line-height:1.4;min-height:34px}
+.stcard .sb{display:flex;height:7px;border-radius:99px;overflow:hidden;margin:10px 4px 6px;background:var(--ink)}
+.stcard .sb i{display:block;height:100%}
+.stcard .sb i.slow{background:var(--slow)}.stcard .sb i.mid{background:var(--muted)}.stcard .sb i.fast{background:var(--amber)}
+.stcard .sb i.rev{background:var(--rev)}.stcard .sb i.flash{background:#fff}
+.stcard .t{font-size:11px;color:var(--muted);letter-spacing:.05em}
+.stcard.on{outline:2px solid var(--amber)}
+.legend{font-size:11px;color:var(--muted);margin-top:8px;display:flex;gap:14px;justify-content:center}
+.legend b{display:inline-block;width:10px;height:10px;border-radius:99px;vertical-align:middle;margin-right:5px}
+#prevWrap{position:relative;width:min(300px,62vw);aspect-ratio:9/16;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;margin:0 auto}
+#prevVid{width:100%;height:100%;object-fit:cover}
+#prevBusy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,7,.7);padding:14px}
+#prevStat{font-size:13px;color:var(--muted);margin-top:8px;line-height:1.5}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line2);border-radius:999px;padding:10px 18px;font-weight:600;cursor:pointer;color:var(--text);background:transparent}
+.chip.on{background:var(--amber);color:#1A1206;border-color:var(--amber)}
+.qr{background:#fff;border-radius:18px;padding:14px;margin:14px 0}
+#qrAdres{font-size:10px;color:var(--muted);word-break:break-all;max-width:min(460px,90vw);margin:8px auto 0;line-height:1.4}
+canvas#qrCanvas{display:block;width:min(300px,64vw);height:auto}
+.hint{color:var(--muted);font-size:13px;margin-top:12px}
+/* kalibrasyon */
+#calWrap{position:relative;width:min(260px,50vw);aspect-ratio:9/16;border-radius:14px;overflow:hidden;border:1px solid var(--line);background:#000;margin:0 auto 8px}
+#calVid{width:100%;height:100%;object-fit:cover}
+#calTime{position:absolute;left:10px;bottom:8px;font-family:var(--disp);font-size:22px;color:var(--paper);text-shadow:0 2px 10px #000}
+#calVals{font-size:15px;color:var(--text);margin-top:6px;line-height:1.7}
+#calVals b{color:var(--amber)}
+/* pin + admin */
+#pinDots{display:flex;gap:14px;margin:16px 0}
+#pinDots i{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line2)}
+#pinDots i.f{background:var(--amber);border-color:var(--amber)}
+#pinPad{display:grid;grid-template-columns:repeat(3,86px);gap:12px}
+#pinPad button{height:66px;border-radius:14px;border:1px solid var(--line);background:var(--ink2);color:var(--text);font-size:22px;font-weight:600;cursor:pointer}
+#s-admin{justify-content:flex-start;overflow:auto;text-align:left;align-items:stretch}
+.aw{width:min(680px,94vw);margin:0 auto;padding-bottom:60px}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 0}
+.topbar .t{font-family:var(--disp);font-size:24px;color:var(--paper)}
+.iconbtn{width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--text);font-size:17px;cursor:pointer}
+.grp{border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;background:rgba(27,23,20,.4)}
+.grp h3{margin:0 0 12px;font-size:15px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber)}
+.fld{margin-bottom:10px}
+.fld2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lbl{font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.05em}
+input[type=text],input[type=number],select{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--text);padding:12px;font-family:var(--ui);font-size:15px}
+.note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px}
+.note.ok{color:#8fd694}.note.err{color:#ff8a80}
+.mrow{display:flex;align-items:center;gap:10px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin-top:8px;flex-wrap:wrap}
+.mrow .nm{flex:1;font-size:14px;min-width:120px}
+.mrow select{width:auto;padding:8px 10px;font-size:13px}
+.ck{display:flex;align-items:center;gap:10px;font-size:14px;padding:6px 0}
+.ck input{width:22px;height:22px;accent-color:var(--amber)}
+footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--muted);text-transform:uppercase;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- ATTRACT -->
+<section class="screen on" id="s-attract">
+  <div class="eyebrow">OBSKURA 360</div>
+  <h1>Etrafında <em>dönen</em> an</h1>
+  <div class="lede" id="attractEvt"></div>
+  <div class="row"><button class="btn lg" id="startBtn">BAŞLAT</button></div>
+  <div class="hint">Misafir platforma çıksın, görevli BAŞLAT'a bassın.</div>
+  <div class="hint" id="kvkkNot" style="max-width:520px;opacity:.62;font-size:11px;margin-top:18px"></div>
+</section>
+
+<!-- KAYIT -->
+<section class="screen" id="s-rec">
+  <video id="cam" autoplay muted playsinline></video>
+  <div id="recUi">
+    <div id="recHint"></div>
+    <div id="count"></div>
+    <div id="recBadge"><i></i><span id="recLeft"></span></div>
+  </div>
+</section>
+
+<!-- YÜKLEME -->
+<section class="screen" id="s-upload">
+  <div class="spin"></div>
+  <h1>Video <em>hazırlanıyor</em></h1>
+  <div class="lede" id="upNote">Yükleniyor…</div>
+  <div class="bar"><i id="upBar"></i></div>
+  <div class="row" id="upTekrar" hidden>
+    <button class="btn" id="upTekrarBtn">Tekrar dene</button>
+    <button class="btn ghost mini" id="upVazgec">Vazgeç</button>
+  </div>
+</section>
+
+<!-- ŞABLON SEÇ -->
+<section class="screen" id="s-style">
+  <div class="eyebrow">Son Dokunuş</div>
+  <h1 id="styleTitle">Şablonunu <em>seç</em></h1>
+  <div class="grid" id="styleGrid"></div>
+  <div class="legend"><span><b style="background:var(--slow)"></b>ağır çekim</span><span><b style="background:var(--muted)"></b>normal</span><span><b style="background:var(--amber)"></b>hızlı</span><span><b style="background:var(--rev)"></b>geri</span></div>
+  <div class="row">
+    <button class="chip" id="muzikChip" hidden>🎵 Müzik</button>
+    <button class="btn ghost mini" id="yenidenBtn">Yeniden çek</button>
+  </div>
+</section>
+
+<!-- ÖNİZLEME -->
+<section class="screen" id="s-prev">
+  <div class="eyebrow" id="prevName"></div>
+  <div id="prevWrap">
+    <video id="prevVid" autoplay muted loop playsinline></video>
+    <div id="prevBusy"><div class="spin"></div><div class="lede">Edit hazırlanıyor…</div><div id="prevStat"></div></div>
+  </div>
+  <div class="row">
+    <button class="btn" id="useBtn" disabled>Bunu kullan</button>
+    <button class="btn ghost" id="otherBtn">Başka şablon</button>
+  </div>
+</section>
+
+<!-- TESLİM -->
+<section class="screen" id="s-done">
+  <div class="eyebrow">Hazır</div>
+  <h1>Telefonuna <em>al</em></h1>
+  <div class="qr"><canvas id="qrCanvas" width="480" height="480"></canvas></div>
+  <div class="lede" id="doneNote">Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.</div>
+  <div class="note err" id="qrUyari" style="max-width:520px"></div>
+  <div id="qrAdres"></div>
+  <div class="row">
+    <button class="btn" id="againBtn">Yeni çekim</button>
+    <button class="btn ghost mini" id="qrKopya">Bağlantıyı kopyala</button>
+    <button class="btn ghost mini" id="qrAc">Aç</button>
+  </div>
+</section>
+
+<!-- KALİBRASYON -->
+<section class="screen" id="s-cal">
+  <div class="eyebrow">Tur & Yüz Anı Kalibrasyonu</div>
+  <div id="calWrap"><video id="calVid" muted loop playsinline></video><div id="calTime">0.0</div></div>
+  <div class="lede" style="font-size:14px">Video dönerken misafirin yüzü <b>tam kameraya baktığı an</b> düğmeye bas. İkinci kez tam öne geldiğinde bir daha bas — tur süresi kendiliğinden hesaplanır.</div>
+  <div id="calVals"></div>
+  <div class="row">
+    <button class="btn lg" id="calFace">YÜZ TAM ÖNDE</button>
+  </div>
+  <div class="row">
+    <button class="btn ghost mini" id="calReset">Baştan</button>
+    <button class="btn ghost mini" id="calSave">Kaydet ve kapat</button>
+    <button class="btn ghost mini" id="calCancel">Vazgeç</button>
+  </div>
+</section>
+
+<!-- PIN -->
+<section class="screen" id="s-pin">
+  <div class="eyebrow">Yönetici</div>
+  <div id="pinDots"><i></i><i></i><i></i><i></i></div>
+  <div id="pinPad"></div>
+  <div class="row"><button class="btn ghost mini" data-go="attract">Vazgeç</button></div>
+</section>
+
+<!-- ADMIN -->
+<section class="screen" id="s-admin">
+  <div class="aw">
+    <div class="topbar"><div class="t">OBSKURA 360 — Ayarlar</div><button class="iconbtn" data-go="attract">✕</button></div>
+    <div class="grp">
+      <h3>Etkinlik</h3>
+      <div class="fld"><div class="lbl">Etkinlik adı</div><input type="text" id="fEvt"></div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Çekim süresi</div>
+          <select id="fSure"><option value="10">10 saniye</option><option value="15">15 saniye</option><option value="20">20 saniye</option></select></div>
+        <div class="fld"><div class="lbl">Kamera</div>
+          <select id="fKam"><option value="user">Ön kamera (ekran misafire bakar)</option><option value="environment">Arka kamera</option></select></div>
+      </div>
+      <div class="fld"><div class="lbl">Paket (satılan iş)</div>
+        <select id="fPaket">
+          <option value="editsiz">Editsiz — ham video, şablon yok</option>
+          <option value="sablon">Editli · efektsiz — şablon var, efekt yok</option>
+          <option value="efektli">Editli · efektli — şablon + efekt katmanı</option>
+        </select></div>
+      <div class="note" id="paketNot"></div>
+      <div class="fld"><div class="lbl">Kadraj</div>
+        <select id="fKadraj"><option value="genis916">En geniş açı → 9:16, kenarlar bulanık (önerilen)</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select></div>
+      <div class="note" id="camInfo"></div>
+    </div>
+    <div class="grp">
+      <h3>Şablonlar</h3>
+      <div id="tplList"></div>
+      <div class="note">İşaretli şablonlar misafir ekranında görünür; <b>ilk işaretli</b> şablon yüklemeden hemen sonra arka planda hazırlanır. Her şablona ayrı müzik seçebilirsin (boşsa "genel" müzik kullanılır). Az şablon = az bulut maliyeti.</div>
+    </div>
+    <div class="grp">
+      <h3>Tur & Yüz Anı</h3>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">1 tur süresi (sn)</div><input type="number" id="fTur" min="2" max="60" step="0.1"></div>
+        <div class="fld"><div class="lbl">İlk yüz anı (sn)</div><input type="number" id="fYuz" min="0" max="60" step="0.1"></div>
+      </div>
+      <div class="row" style="justify-content:flex-start;margin-top:4px">
+        <button class="btn ghost mini" id="calBtn">Kalibrasyon (son çekimle)</button>
+        <button class="btn ghost mini" id="calFileBtn">Video dosyasıyla</button>
+        <input type="file" id="calFile" accept="video/*" hidden>
+      </div>
+      <div class="note">Şablonlar ağır çekimi yüzün kameraya baktığı ana kilitler. Kol misafirin önünden başlıyorsa yüz anı 0'dır; sonraki yüz anları tur süresiyle bulunur.</div>
+    </div>
+    <div class="grp">
+      <h3>Logo</h3>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="logoBtn">Logo yükle (PNG)</button>
+        <input type="file" id="logoFile" accept="image/*" hidden>
+        <button class="btn ghost mini" id="logoDel">Kaldır</button>
+      </div>
+      <div class="note" id="logoInfo"></div>
+      <div class="fld2" style="margin-top:8px">
+        <div class="fld"><div class="lbl">Konum</div>
+          <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option></select></div>
+        <div class="fld"><div class="lbl">Boyut</div>
+          <select id="fLogoW"><option value="0.16">Küçük</option><option value="0.22">Orta</option><option value="0.30">Büyük</option></select></div>
+      </div>
+    </div>
+    <div class="grp" id="fxGrp">
+      <h3>Efekt Katmanı (FX)</h3>
+      <div class="note err" id="fxKapali"></div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Bindirme yöntemi</div>
+          <select id="fFx"><option value="green">Yeşil perde (önerilen)</option><option value="alpha">Alfa kanallı (deneme)</option><option value="off">Kapalı</option></select></div>
+        <div class="fld"><div class="lbl">Yeşil tolerans (0–100)</div><input type="number" id="fTol" min="0" max="100" step="1"></div>
+      </div>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="fxBtn">FX videolarını yükle</button>
+        <input type="file" id="fxFile" accept="video/*" multiple hidden>
+      </div>
+      <div class="note" id="fxInfo"></div>
+      <div class="note">Dosya adı efekt adıdır: <b>yildiz, kalp, konfeti, sparkle</b> (.mp4 yeşil zemin; alfa denemesi için <b>konfeti_a.webm</b>). Klasör: booth360/_fx</div>
+    </div>
+    <div class="grp">
+      <h3>Müzik</h3>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="muzikBtn">Müzik yükle (MP3)</button>
+        <input type="file" id="muzikFile" accept="audio/*" hidden>
+      </div>
+      <div id="muzikList"></div>
+      <div class="note">Telifsiz müzik kullan. "Genel" seçtiğin parça, kendi müziği olmayan şablonlarda çalar. Misafir ekranındaki 🎵 düğmesi müziği açıp kapatır.</div>
+    </div>
+    <div class="grp">
+      <h3>Dijital Teslim</h3>
+      <div class="fld"><div class="lbl">Cloudinary cloud name</div><input type="text" id="fCld"></div>
+      <div class="fld"><div class="lbl">Upload preset (unsigned)</div><input type="text" id="fPreset"></div>
+      <div class="fld"><div class="lbl">Site adresi (karekodun açacağı adres — boşsa sayfanın kendi adresi)</div><input type="text" id="fSite" placeholder="https://burakisik88-ctrl.github.io/booth360/"></div>
+      <div class="fld"><div class="lbl">Karekod</div>
+        <select id="fQr"><option value="page">İzleme sayfası — izle, kaydet, paylaş (önerilen)</option><option value="mp4">Doğrudan MP4 bağlantısı</option></select></div>
+      <div class="note">Videolar <b>booth360/etkinlik-adı</b> klasörüne düşer. İzleme sayfası bu sitedeki <b>v.html</b>'dir.</div>
+    </div>
+    <div class="grp">
+      <h3>Gelişmiş</h3>
+      <label class="ck"><input type="checkbox" id="fkWarm"> Yüklemeden sonra ilk şablonu arka planda hazırla</label>
+      <label class="ck"><input type="checkbox" id="fkDbl"> ¼× ağır çekim (yüz anında iki kat yavaşlatma)</label>
+      <label class="ck"><input type="checkbox" id="fkZoom"> Zoom vuruşları (Kulüp)</label>
+      <label class="ck"><input type="checkbox" id="fkFlash"> Flaş kareleri</label>
+      <label class="ck"><input type="checkbox" id="fkNoise"> Film greni (Noir)</label>
+      <label class="ck"><input type="checkbox" id="fkDu"> FX ve müziği video süresine kırp (du_)</label>
+      <div class="note">Canlı testte hata veren özellik buradan kapatılır; yeni sürüm beklemeden devam edilir.</div>
+    </div>
+    <div class="grp">
+      <h3>Saha</h3>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Karekod ekranı kaç sn sonra başa dönsün</div><input type="number" id="fOto" min="0" max="600" step="5"></div>
+        <div class="fld"><div class="lbl">Ekran uyanık kalsın</div><select id="fWake"><option value="1">Açık (önerilen)</option><option value="0">Kapalı</option></select></div>
+      </div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Geri sayım sesi + titreşim</div><select id="fSesli"><option value="1">Açık (önerilen)</option><option value="0">Kapalı</option></select></div>
+        <div class="fld"><div class="lbl">Panel şifresi (4 hane)</div><input type="text" id="fPin" inputmode="numeric" maxlength="4"></div>
+      </div>
+      <div class="fld"><div class="lbl">Kayıt ekranındaki yönerge (misafire)</div><input type="text" id="fYonerge"></div>
+      <div class="fld"><div class="lbl">Misafir ekranındaki bilgilendirme (KVKK)</div><input type="text" id="fKvkk"></div>
+      <label class="ck" style="margin-top:6px"><input type="checkbox" id="fkDeneme"><span>DENEME ÇEKİMİ — sayaca ve etkinlik galerisine yazmaz (kurulum provası için)</span></label>
+      <div class="note" id="denemeNot"></div>
+      <div class="note ok" id="durumNot"></div>
+      <div class="note ok" id="sayacNot"></div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px">
+        <button class="btn ghost mini" id="galeriAc">Etkinlik galerisini aç</button>
+        <button class="btn ghost mini" id="galeriKopya">Galeri bağlantısını kopyala</button>
+        <button class="btn ghost mini" id="sayacSifirla">Sayacı sıfırla</button>
+      </div>
+      <div class="note" id="galeriNot"></div>
+    </div>
+    <div class="grp">
+      <h3>Bulut Maliyeti</h3>
+      <div class="note ok" id="maliyetNot"></div>
+      <div class="fld"><div class="lbl">1 Cloudinary kredisinin TL karşılığı</div><input type="number" id="fKredi" min="1" max="500" step="0.01"></div>
+      <div class="note">Plus plan: 99 $ / 225 kredi = 0,44 $ · 48,44 TL kur → <b>21,31 TL/kredi</b>. HD video: <b>250 çıktı saniyesi = 1 kredi</b>.
+      Kur ya da plan değişirse buradan güncelle. Editsiz pakette bulut işlemi yoktur — yalnız depolama.</div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost mini" id="maliyetSifirla">Maliyet sayacını sıfırla</button></div>
+    </div>
+    <div class="grp">
+      <h3>Saha Kontrolü</h3>
+      <div class="note">Etkinlik sabahı ve mekânın wifi'sine bağlandıktan sonra bir kez çalıştır. Kamera, yükleme, 6 şablonun her biri, müzik ses katmanı, logo, karekod ve galeri tek tek denenir; kırmızı varsa misafir gelmeden düzeltirsin.</div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn" id="testAc">Kontrolü aç</button></div>
+    </div>
+    <div class="grp">
+      <h3>Ayar Yedeği</h3>
+      <div class="note err" id="yedekUyari">iPhone, 7 gün açılmayan sitenin hafızasını silebilir. Etkinlikten önce bu yedeği al — ayarların hepsi (Cloudinary, müzik, logo, FX, şablonlar) burada.</div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px">
+        <button class="btn ghost mini" id="yedekBag">Yer imi bağlantısı kopyala</button>
+        <button class="btn ghost mini" id="yedekKopya">Ayar metnini kopyala</button>
+        <button class="btn ghost mini" id="yedekGoster">Göster / yapıştır</button>
+      </div>
+      <textarea id="yedekTxt" hidden style="width:100%;height:110px;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:11px;padding:8px;margin-top:8px"></textarea>
+      <div class="row" id="yedekYukleRow" hidden style="justify-content:flex-start;margin-top:8px"><button class="btn ghost mini" id="yedekYukle">Yapıştırılan ayarı yükle</button></div>
+      <div class="note" id="yedekNot"></div>
+    </div>
+    <div class="grp">
+      <h3>Tanı</h3>
+      <textarea id="taniTxt" readonly style="width:100%;height:90px;background:var(--ink);border:1px solid var(--line);border-radius:10px;color:var(--muted);font-size:11px;padding:8px"></textarea>
+      <div class="row" style="justify-content:flex-start;margin-top:8px"><button class="btn ghost mini" id="taniKopyala">Tanı kodunu kopyala</button><span class="note" id="taniNot"></span></div>
+      <div class="note">Bir şey çalışmadığında bu kodu kopyalayıp sohbete yapıştır; müzik, kamera ve son video adresi içinde.</div>
+    </div>
+    <div class="note" id="verNote"></div>
+  </div>
+</section>
+
+<button id="gearBtn">⚙</button>
+<footer class="tag">Anı burada döner</footer>
+
+<script>
+/*QRLIB*/
+</script>
+<script>
+/*ENGINE*/
+</script>
+<script>
+/*APP*/
+</script>
+</body>
+</html>

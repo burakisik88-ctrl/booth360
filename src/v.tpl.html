@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#12100E">
+<title>OBSKURA 360 — videon</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;600;800&display=swap">
+<style>
+:root{--ink:#12100E;--ink2:#1B1714;--line:rgba(243,237,228,.14);--line2:rgba(243,237,228,.3);--paper:#F6F0E6;--text:#F3EDE4;--muted:#A79688;--amber:#F2A93B;
+  --disp:"Instrument Serif",Georgia,serif;--ui:"Figtree",-apple-system,"Segoe UI",sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%;background:var(--ink);color:var(--text);font-family:var(--ui)}
+.wrap{max-width:460px;margin:0 auto;padding:22px 18px 40px;text-align:center}
+.eyebrow{font-family:var(--disp);letter-spacing:.34em;font-size:13px;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+h1{font-family:var(--disp);font-style:italic;font-weight:400;font-size:34px;margin:0 0 14px;color:var(--paper)}
+h1 em{color:var(--amber);font-style:italic}
+#vw{position:relative;width:min(340px,86vw);aspect-ratio:9/16;margin:0 auto;border-radius:16px;overflow:hidden;border:1px solid var(--line);background:#000}
+#vid{width:100%;height:100%;object-fit:cover;background:#000}
+#busy{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(10,8,7,.75);padding:16px;color:var(--muted);font-size:14px;line-height:1.5}
+.spin{width:38px;height:38px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--amber);animation:sp 1s linear infinite;margin:0 auto 14px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:58px;padding:0 26px;border:none;border-radius:999px;font-family:var(--ui);font-weight:600;font-size:16px;letter-spacing:.04em;background:var(--amber);color:#1A1206;cursor:pointer;text-decoration:none}
+.btn.ghost{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line2)}
+.btn[disabled]{opacity:.45}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.hint{color:var(--muted);font-size:13px;line-height:1.6;margin-top:14px}
+.hint b{color:var(--text)}
+footer{margin-top:28px;font-family:var(--disp);letter-spacing:.3em;font-size:11px;color:var(--muted);text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">OBSKURA 360</div>
+  <h1>Etrafında <em>dönen</em> anın</h1>
+  <div id="vw"><video id="vid" controls playsinline loop></video><div id="busy"><div class="spin"></div><div id="bmsg">Videon hazırlanıyor…</div></div></div>
+  <div class="row">
+    <button class="btn" id="saveBtn" disabled>Videoyu kaydet / paylaş</button>
+    <a class="btn ghost" id="openBtn" href="#" target="_blank" rel="noopener">Videoyu aç</a>
+  </div>
+  <div class="hint" id="hint">Kaydet'e dokun → açılan paylaşım menüsünde <b>Videoyu Kaydet</b> seç, galerine iner. Instagram'da Reels ya da Story olarak paylaşabilirsin (9:16). Menü açılmazsa <b>Videoyu aç</b> → paylaş simgesi → Videoyu Kaydet.</div>
+  <footer>Anı burada döner</footer>
+</div>
+<script>
+/*ENGINE*/
+</script>
+<script>
+(function(){
+"use strict";
+var E=B360E;
+function $(s){return document.querySelector(s)}
+var spec=E.decode(location.hash),url="";
+try{url=(spec.p&&spec.t)?E.url(spec):""}catch(e){url=""}
+var vid=$("#vid"),busy=$("#busy"),bmsg=$("#bmsg"),saveBtn=$("#saveBtn"),openBtn=$("#openBtn");
+if(!url){bmsg.textContent="Bağlantı eksik — karekodu yeniden okut.";openBtn.style.display="none";}
+else{
+  openBtn.href=url;
+  ready(url,function(n,sec){bmsg.textContent="Videon hazırlanıyor… "+sec+" sn"+(sec>=20?" (ilk hazırlık 30–60 sn sürebilir)":"")}).then(function(){
+    /* iOS Safari, kullanıcı oynatana kadar veri yüklemez: spinner'ı hazır olur olmaz kaldır, kontrolleri aç */
+    var opened=false;function openIt(){if(opened)return;opened=true;busy.style.display="none";saveBtn.disabled=false}
+    vid.onloadedmetadata=openIt;vid.onloadeddata=openIt;
+    vid.onerror=function(){if(!opened){bmsg.textContent="Oynatıcı açılamadı — 'Videoyu aç' ile izle ya da Kaydet'e dokun.";saveBtn.disabled=false}};
+    vid.src=url;vid.load&&vid.load();
+    setTimeout(openIt,2500);
+  }).catch(function(e){bmsg.textContent="Video hazırlanamadı ("+((e&&e.message)||"hata")+"). Görevliye söyle, yeniden çekelim.";openBtn.style.display="inline-flex"});
+}
+function ready(u,onStat){
+  return new Promise(function(res,rej){
+    var t0=Date.now(),n=0;
+    (function tick(){
+      n++;if(onStat)onStat(n,Math.round((Date.now()-t0)/1000));
+      var p;try{p=fetch(u,{method:"HEAD",cache:"no-store"})}catch(e){p=Promise.reject(e)}
+      p.then(function(r){
+        if(r.status===200||r.status===206){res(r);return}
+        if(r.status===423||r.status===425||r.status===429||r.status>=500){retry();return}
+        rej(new Error("HTTP "+r.status));
+      }).catch(function(){retry()});
+      function retry(){if(Date.now()-t0>180000){rej(new Error("zaman aşımı"));return}setTimeout(tick,n<3?1500:3000)}
+    })();
+  });
+}
+saveBtn.onclick=function(){
+  saveBtn.disabled=true;var old=saveBtn.textContent;saveBtn.textContent="İndiriliyor… %0";
+  var ctrl=("AbortController" in window)?new AbortController():null,timer=setTimeout(function(){try{ctrl&&ctrl.abort()}catch(e){}},90000);
+  fetch(url,ctrl?{signal:ctrl.signal}:{}).then(function(r){
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    var total=+r.headers.get("content-length")||0;if(!r.body||!total)return r.blob();
+    var reader=r.body.getReader(),got=0,parts=[];
+    return reader.read().then(function step(x){if(x.done)return new Blob(parts,{type:"video/mp4"});parts.push(x.value);got+=x.value.length;saveBtn.textContent="İndiriliyor… %"+Math.min(99,Math.round(100*got/total));return reader.read().then(step)});
+  }).then(function(b){clearTimeout(timer);
+    var f=new File([b],"obskura360.mp4",{type:"video/mp4"});
+    if(navigator.canShare&&navigator.canShare({files:[f]}))return navigator.share({files:[f],title:"OBSKURA 360"});
+    var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="obskura360.mp4";document.body.appendChild(a);a.click();
+    setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
+  }).catch(function(){clearTimeout(timer);window.open(url,"_blank")}).then(function(){saveBtn.disabled=false;saveBtn.textContent=old});
+};
+window.B360V={spec:spec,url:url};
+})();
+</script>
+</body>
+</html>
