@@ -41,6 +41,7 @@ footer{margin-top:34px;text-align:center;font-family:var(--disp);letter-spacing:
     <h1 id="baslik">Etkinlik <em>galerisi</em></h1>
     <div class="sub" id="alt">Yükleniyor…</div>
   </div>
+  <div class="row" id="zipRow" hidden><button class="btn ghost" id="zipBtn">Tümünü indir</button><span class="msg" id="zipNot" style="padding:0;font-size:13px"></span></div>
   <div class="grid" id="grid"></div>
   <div class="msg" id="msg" hidden></div>
   <footer>Anı burada döner</footer>
@@ -53,7 +54,7 @@ footer{margin-top:34px;text-align:center;font-family:var(--disp);letter-spacing:
 "use strict";
 function $(s){return document.querySelector(s)}
 var q=new URLSearchParams(location.hash.replace(/^#/,""));
-var cloud=q.get("c")||"", tag=q.get("t")||"", evt=q.get("e")||"";
+var cloud=q.get("c")||"", tag=q.get("t")||"", evt=q.get("e")||"", zipAcik=q.get("z")==="1";
 if(evt)$("#baslik").innerHTML=evt.replace(/</g,"&lt;")+" <em>galerisi</em>";
 function base(){return "https://res.cloudinary.com/"+encodeURIComponent(cloud)+"/video/upload/"}
 function poster(pid,ver){return base()+"so_1/c_fill,w_320,h_568/v"+ver+"/"+pid+".jpg"}
@@ -68,6 +69,11 @@ else{
     rs.sort(function(a,b){return (b.created_at||"")<(a.created_at||"")?-1:1});
     if(!rs.length){hata("Bu etkinlikte henüz video yok.");return}
     $("#alt").textContent=rs.length+" video · karta dokunup izleyin, kaydedin";
+    if(zipAcik&&rs.length){
+      $("#zipRow").hidden=false;
+      $("#zipNot").textContent=rs.length+" video · bilgisayarda yapın, telefonda takılabilir";
+      $("#zipBtn").onclick=function(){topluIndir(rs)};
+    }
     var g=$("#grid");
     rs.forEach(function(x){
       var c=document.createElement("div");c.className="cell";
@@ -79,6 +85,30 @@ else{
   .catch(function(e){
     hata("Galeri okunamadı ("+((e&&e.message)||"hata")+").<br>Cloudinary → Settings → Security → <b>Resource list</b> kısıtı kapalı olmalı.");
   });
+}
+/* TOPLU İNDİRME (opsiyonel — müşteri tüm videoları isterse).
+   Cloudinary başka bir alan adı olduğu için <a download> çalışmıyor; her dosya
+   tek tek indirilip blob olarak kaydediliyor. Sırayla, biri bitmeden diğeri başlamıyor. */
+function topluIndir(rs){
+  var b=$("#zipBtn"),n=$("#zipNot"),i=0,hata=0,iptal=false;
+  b.textContent="Durdur";
+  b.onclick=function(){iptal=true;n.textContent="Durduruluyor…"};
+  function ad(x,k){return (evt?evt.replace(/[^\wğüşıöçĞÜŞİÖÇ -]/g,"").trim().replace(/\s+/g,"_"):"obskura")+"_"+String(k+1).padStart(3,"0")+".mp4"}
+  function sira(){
+    if(iptal||i>=rs.length){
+      b.textContent="Tümünü indir";b.onclick=function(){topluIndir(rs)};
+      n.textContent=iptal?("Durduruldu — "+i+" video indi."):(i+" video indi"+(hata?(", "+hata+" tanesi inemedi"):"."));
+      return;
+    }
+    var x=rs[i];
+    n.textContent=(i+1)+" / "+rs.length+" indiriliyor…";
+    fetch(vurl(x.public_id,x.version)).then(function(r){if(!r.ok)throw 0;return r.blob()}).then(function(bl){
+      var a=document.createElement("a");a.href=URL.createObjectURL(bl);a.download=ad(x,i);
+      document.body.appendChild(a);a.click();
+      setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},4000);
+    }).catch(function(){hata++}).then(function(){i++;setTimeout(sira,900)});
+  }
+  sira();
 }
 var cur="";
 function ac(u){cur=u;$("#lbv").src=u;$("#lb").classList.add("on");$("#lbv").play&&$("#lbv").play().catch(function(){})}

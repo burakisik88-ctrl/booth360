@@ -27,6 +27,7 @@ h1 em{color:var(--amber);font-style:italic}
 .btn.lg{min-height:86px;font-size:clamp(18px,3vw,24px);width:min(460px,88vw)}
 .btn[disabled]{opacity:.45;cursor:default}
 .row{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-top:18px}
+#markaLogo{max-width:min(240px,52vw);max-height:110px;object-fit:contain;margin-bottom:22px}
 #gearBtn{position:fixed;right:14px;bottom:14px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line);background:rgba(27,23,20,.5);color:var(--muted);font-size:20px;z-index:40;cursor:pointer}
 video{background:#000}
 #cam{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;z-index:0}
@@ -107,8 +108,9 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
 
 <!-- ATTRACT -->
 <section class="screen on" id="s-attract">
-  <div class="eyebrow">OBSKURA 360</div>
-  <h1>Etrafında <em>dönen</em> an</h1>
+  <img id="markaLogo" alt="" hidden>
+  <div class="eyebrow" id="attractUst">OBSKURA 360</div>
+  <h1 id="attractBas">Etrafında <em>dönen</em> an</h1>
   <div class="lede" id="attractEvt"></div>
   <div class="row"><button class="btn lg" id="startBtn">BAŞLAT</button></div>
   <div class="hint">Misafir platforma çıksın, görevli BAŞLAT'a bassın.</div>
@@ -228,6 +230,17 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="note" id="camInfo"></div>
     </div>
     <div class="grp">
+      <h3>Marka (misafirin gördüğü ekran)</h3>
+      <div class="fld"><div class="lbl">Üst satır</div><input type="text" id="fUst" placeholder="OBSKURA 360"></div>
+      <div class="fld"><div class="lbl">Başlık — vurgulamak istediğin kelimeyi *yıldız* içine al</div><input type="text" id="fBas" placeholder="Etrafında *dönen* an"></div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Vurgu rengi</div><input type="text" id="fRenk" placeholder="#F2A93B"></div>
+        <div class="fld"><div class="lbl">Açılışta logo</div>
+          <select id="fMarkaLogo"><option value="0">Gösterme</option><option value="1">Yüklü logoyu göster</option></select></div>
+      </div>
+      <div class="note" id="markaNot"></div>
+    </div>
+    <div class="grp">
       <h3>Şablonlar</h3>
       <div id="tplList"></div>
       <div class="note">İşaretli şablonlar misafir ekranında görünür; <b>ilk işaretli</b> şablon yüklemeden hemen sonra arka planda hazırlanır. Her şablona ayrı müzik seçebilirsin (boşsa "genel" müzik kullanılır). Az şablon = az bulut maliyeti.</div>
@@ -334,8 +347,15 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="row" style="justify-content:flex-start;margin-top:8px">
         <button class="btn ghost mini" id="galeriAc">Etkinlik galerisini aç</button>
         <button class="btn ghost mini" id="galeriKopya">Galeri bağlantısını kopyala</button>
+        <button class="btn ghost mini" id="sayacYenile">Sayacı buluttan yenile</button>
         <button class="btn ghost mini" id="sayacSifirla">Sayacı sıfırla</button>
       </div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px">
+        <button class="btn ghost mini" id="raporAc">Müşteri raporunu aç</button>
+        <button class="btn ghost mini" id="raporKopya">Rapor bağlantısını kopyala</button>
+      </div>
+      <div class="note">Rapor ve galeri, hangi booth'tan çekildiği fark etmeksizin <b>bulutta birleşir</b>. Sayaç ise her telefonun kendi hafızasında — gerçek toplam için "buluttan yenile".</div>
+      <label class="ck" style="margin-top:8px"><input type="checkbox" id="fkZip"><span>Galeride "tümünü indir" düğmesi görünsün (müşteri tüm videoları tek seferde isterse)</span></label>
       <div class="note" id="galeriNot"></div>
     </div>
     <div class="grp">

@@ -202,6 +202,8 @@ $("#run").onclick=function(){
       },function(e){gunluk.push((ci+1)+": izin/hata");return dene()});
     }
     return dene().then(function(){
+      if(en){try{var tr=en.st.getVideoTracks()[0];var cp=(tr.getCapabilities&&tr.getCapabilities())||{};
+        window.__fpsTavan=(cp.frameRate&&cp.frameRate.max)||0}catch(e){window.__fpsTavan=0}}
       if(!en){set(d,"err","Hiçbir kamera ayarı dikey kare vermedi. Denenenler → "+gunluk.join(" | ")+". Telefonu dik tut ve Safari'yi kapatıp aç.");return}
       var w=en.w,h=en.h,fps=en.fps,oran=w/h;dur(en);
       var msg=w+"×"+h+" @"+fps+"fps · dikey · en/boy "+oran.toFixed(2)+"  (aday "+(en.ci+1)+"/"+cands.length+")";
@@ -209,6 +211,28 @@ $("#run").onclick=function(){
       else if(oran<0.7)set(d,"warn",msg+" — kadraj dar, misafir çerçeveye zor sığar. Panel → Kadraj'ı 'En geniş' yap.");
       else set(d,"ok",msg+" · geniş kadraj ✔"+(fps<50?"  — 30 fps; ağır çekim akıcı ama sinema gibi değil, bu telefonun sınırı":""));
     });
+  })
+  /* 3b — AĞIR ÇEKİM TAVANI: tarayıcı bu telefondan kaç fps almamıza izin veriyor?
+        Rakipler (LumaBooth, RevoSpin, Snappic) native uygulamayla 120–240 fps çekiyor.
+        Tarayıcıdan o hızlara çıkılabiliyorsa native uygulamaya geçmenin teknik gerekçesi kalmaz. */
+  .then(function(){d=add("Ağır çekim tavanı");
+    if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){set(d,"warn","Kamera açılamadığı için ölçülemedi.");return}
+    var fm=(S.kamera==="environment")?"environment":"user";
+    return navigator.mediaDevices.getUserMedia({video:{facingMode:fm,width:{ideal:1280},height:{ideal:720},frameRate:{ideal:240}},audio:false})
+      .then(function(st){
+        var tr=st.getVideoTracks()[0],sg={},cp={};
+        try{sg=tr.getSettings()||{}}catch(e){}
+        try{cp=(tr.getCapabilities&&tr.getCapabilities())||{}}catch(e){}
+        var alinan=Math.round(sg.frameRate||0);
+        var tavan=Math.round((cp.frameRate&&cp.frameRate.max)||window.__fpsTavan||0);
+        st.getTracks().forEach(function(t){t.stop()});
+        var t=[];
+        t.push("240 fps istendi → "+(alinan?alinan+" fps verildi":"okunamadı"));
+        t.push(tavan?("tarayıcının beyan ettiği tavan: "+tavan+" fps"):"tarayıcı tavan bilgisi vermiyor (iOS Safari çoğu zaman vermez)");
+        if(alinan>=100)set(d,"ok",t.join(" · ")+" — bu telefonda tarayıcıdan yüksek hızlı çekim ALINIYOR. Native uygulamaya geçmenin fps gerekçesi ortadan kalkar.");
+        else if(alinan>=50)set(d,"warn",t.join(" · ")+" — 60 fps sınıfı. Ağır çekim akıcı ama rakiplerin 120/240 fps'i kadar değil. Native uygulama bu tek konuda üstün kalır.");
+        else set(d,"warn",t.join(" · ")+" — 30 fps sınıfı. Ağır çekimde takılma görülür; ışığı artırmak en ucuz çözüm. Rakip farkı burada.");
+      },function(e){set(d,"warn","Ölçülemedi ("+((e&&e.name)||"hata")+") — bu telefon 240 fps isteğini hiç kabul etmedi, yani yüksek hızlı çekim yok.")});
   })
   /* 4 — MediaRecorder + test klibi */
   .then(function(){d=add("Video kaydı (MediaRecorder)");

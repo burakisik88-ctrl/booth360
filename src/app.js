@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.6.0";
+var VER="v0.7.0";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -9,6 +9,7 @@ var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",ca
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1},
   kvkk:"Bu alanda çekilen videolar etkinlik boyunca saklanır ve yalnızca karekod ile size verilir.",
   otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0, logoZorunlu:0, hamKart:1,
+  ust:"OBSKURA 360", bas:"Etrafında *dönen* an", renk:"", markaLogo:0, zip:0,
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -125,10 +126,43 @@ function maliyetMetin(){
   return r+" bulut render · "+Math.round(sn)+" sn · "+kr.toFixed(2)+" kredi · ≈"+tl.toFixed(0)+" TL"+
          (o.teslim?("  ·  teslim başına ≈"+(tl/o.teslim).toFixed(1)+" TL"):"");
 }
+/* ÇOK BOOTH: sayaç her telefonun kendi hafızasında tutuluyor — iki booth çalışınca
+   sayılar bölünüyor. Gerçek toplam bulutta: aynı etiketle yüklenen videoların sayısı.
+   Hangi telefondan geldiği fark etmez. */
+var bulut={sayi:null,ilk:"",son:"",saat:null,hata:"",zaman:0};
+function bulutSayim(cb){
+  var t=evSlug()+"-360";
+  var u="https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/video/list/"+encodeURIComponent(t)+".json";
+  fetch(u,{cache:"no-store"}).then(function(r){
+    if(r.status===404){bulut={sayi:0,ilk:"",son:"",saat:{},hata:"",zaman:Date.now()};if(cb)cb(bulut);return}
+    if(!r.ok)throw new Error("HTTP "+r.status);
+    return r.json().then(function(j){
+      var rs=(j.resources||[]).filter(function(x){return String(x.public_id||"").indexOf("/_")<0});
+      var saat={},zs=[];
+      rs.forEach(function(x){
+        var c=x.created_at||"";if(!c)return;
+        zs.push(c);
+        var h=c.slice(11,13);if(h)saat[h]=(saat[h]||0)+1;
+      });
+      zs.sort();
+      bulut={sayi:rs.length,ilk:zs[0]||"",son:zs[zs.length-1]||"",saat:saat,hata:"",zaman:Date.now()};
+      if(cb)cb(bulut);
+    });
+  }).catch(function(e){
+    bulut={sayi:null,ilk:"",son:"",saat:null,hata:(e&&e.message)||"okunamadı",zaman:Date.now()};
+    if(cb)cb(bulut);
+  });
+}
 function sayacMetin(){
-  var k=evSlug(),o=(S.sayac||{})[k];
-  if(!o)return "Bu etkinlikte henüz çekim yok.";
-  return "«"+(S.evt||"etkinlik")+"» · toplam "+(o.cekim||0)+" çekim, "+(o.teslim||0)+" teslim (karekod) · bugün "+((o.gun||{})[bugun()]||0)+" · son: "+(o.son||"-");
+  var k=evSlug(),o=(S.sayac||{})[k]||{};
+  var b=(bulut.sayi!==null)?bulut.sayi:null;
+  var t=[];
+  if(b!==null)t.push("TÜM BOOTH'LAR: "+b+" video (buluttan sayıldı)");
+  else if(bulut.hata)t.push("Bulut sayımı okunamadı ("+bulut.hata+") — aşağıdaki yalnız BU telefonun rakamı");
+  t.push("Bu telefon: "+(o.cekim||0)+" çekim, "+(o.teslim||0)+" teslim · bugün "+((o.gun||{})[bugun()]||0));
+  if(o.son)t.push("son: "+o.son);
+  if(!o.cekim&&b===null)return "Bu etkinlikte henüz çekim yok.";
+  return "«"+(S.evt||"etkinlik")+"»  ·  "+t.join("  ·  ");
 }
 function evSlug(){
   var s=(S.evt||"etkinlik").toString().toLowerCase();
@@ -154,8 +188,22 @@ function paketOf(){
   return p;
 }
 function paketAd(p){return p==="editsiz"?"Editsiz (ham video)":(p==="sablon"?"Editli · efektsiz":"Editli · efektli")}
+function yildizli(t){ /* *kelime* → vurgu rengiyle */
+  return String(t||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/\*([^*]+)\*/g,"<em>$1</em>");
+}
 function applyBrand(){
   var p=paketOf();
+  try{
+    var u=$("#attractUst");if(u)u.textContent=S.ust||"OBSKURA 360";
+    var b=$("#attractBas");if(b)b.innerHTML=yildizli(S.bas||"Etrafında *dönen* an");
+    if(/^#[0-9a-fA-F]{3,8}$/.test(S.renk||""))document.documentElement.style.setProperty("--amber",S.renk);
+    else document.documentElement.style.removeProperty("--amber");
+    var im=$("#markaLogo");
+    if(im){
+      if(S.markaLogo&&S.logoPid){im.src="https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/image/upload/h_220,c_limit/"+S.logoPid;im.hidden=false}
+      else{im.hidden=true;im.removeAttribute("src")}
+    }
+  }catch(e){}
   $("#attractEvt").textContent=(S.evt?S.evt:"15 saniyelik 360° video — çek, telefonuna al.")+(p!=="efektli"?(" · "+paketAd(p)):"")+(S.deneme?"  ·  DENEME MODU":"");
   var kn=$("#kvkkNot");if(kn)kn.textContent=S.kvkk||"";
 }
@@ -229,11 +277,14 @@ function fillAdmin(){
   paketNot();
   $("#fOto").value=S.otoDon;$("#fWake").value=S.wake?"1":"0";$("#fKvkk").value=S.kvkk||"";
   $("#fSesli").value=S.sesli?"1":"0";$("#fPin").value=PINK();$("#fYonerge").value=S.yonerge||"";
+  $("#fUst").value=S.ust||"";$("#fBas").value=S.bas||"";$("#fRenk").value=S.renk||"";
+  $("#fMarkaLogo").value=S.markaLogo?"1":"0";$("#fkZip").checked=!!S.zip;markaNot();
   $("#fkDeneme").checked=!!S.deneme;denemeNot();
   $("#fKredi").value=tlKredi();
   $("#maliyetNot").textContent=maliyetMetin();
   durumYaz();
   $("#sayacNot").textContent=sayacMetin();
+  bulutSayim(function(){$("#sayacNot").textContent=sayacMetin()});
   $("#galeriNot").textContent="Galeri: "+galeriUrl();
   $("#camInfo").textContent=(S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.")+(S.camLog?("  ·  Denenen: "+S.camLog):"");
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
@@ -275,14 +326,32 @@ $("#fSite").addEventListener("input",function(){S.siteUrl=this.value.trim();save
 $("#fOto").addEventListener("change",function(){S.otoDon=Math.max(0,Math.min(600,+this.value||0));this.value=S.otoDon;save()});
 $("#fWake").addEventListener("change",function(){S.wake=this.value==="1"?1:0;save()});
 $("#fKvkk").addEventListener("input",function(){S.kvkk=this.value;save();applyBrand()});
-function galeriUrl(){return pageBase()+"g.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")}
+function raporUrl(){return pageBase()+"r.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+"&g="+encodeURIComponent(galeriUrl())}
+function galeriUrl(){return pageBase()+"g.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+(S.zip?"&z=1":"")}
 $("#galeriAc").onclick=function(){window.open(galeriUrl(),"_blank")};
 $("#galeriKopya").onclick=function(){var b=$("#galeriKopya");try{navigator.clipboard.writeText(galeriUrl()).then(function(){b.textContent="Kopyalandı"})}catch(e){}
   setTimeout(function(){b.textContent="Galeri bağlantısını kopyala"},2500)};
 $("#sayacSifirla").onclick=function(){if(S.sayac)delete S.sayac[evSlug()];save();$("#sayacNot").textContent=sayacMetin();$("#maliyetNot").textContent=maliyetMetin()};
+$("#raporAc").onclick=function(){window.open(raporUrl(),"_blank")};
+$("#raporKopya").onclick=function(){var b=$("#raporKopya");try{navigator.clipboard.writeText(raporUrl()).then(function(){b.textContent="Kopyalandı"})}catch(e){}
+  setTimeout(function(){b.textContent="Rapor bağlantısını kopyala"},2500)};
+$("#sayacYenile").onclick=function(){$("#sayacNot").textContent="Buluttan sayılıyor…";bulutSayim(function(){$("#sayacNot").textContent=sayacMetin()})};
 $("#fSesli").addEventListener("change",function(){S.sesli=this.value==="1"?1:0;save();if(S.sesli)bip(880,120)});
 $("#fPin").addEventListener("input",function(){var v=this.value.replace(/\D/g,"").slice(0,4);this.value=v;if(v.length===4){S.pin=v;save()}});
 $("#fYonerge").addEventListener("input",function(){S.yonerge=this.value;save()});
+function markaNot(){
+  var n=$("#markaLogo Not")||$("#markaNot");if(!n)return;
+  var t=[];
+  if(S.markaLogo&&!S.logoPid)t.push("Logo yüklü değil — önce Logo bölümünden yükle.");
+  if(S.renk&&!/^#[0-9a-fA-F]{3,8}$/.test(S.renk))t.push("Renk kodu geçersiz, # ile başlamalı (örn. #C8102E).");
+  n.className="note"+(t.length?" err":"");
+  n.textContent=t.length?t.join(" "):"Misafirin gördüğü ilk ekran. Kurumsal işte müşterinin logosunu ve rengini koy — videoya basılan logodan ayrı bir şey.";
+}
+$("#fUst").addEventListener("input",function(){S.ust=this.value;save();applyBrand()});
+$("#fBas").addEventListener("input",function(){S.bas=this.value;save();applyBrand()});
+$("#fRenk").addEventListener("input",function(){S.renk=this.value.trim();save();applyBrand();markaNot()});
+$("#fMarkaLogo").addEventListener("change",function(){S.markaLogo=this.value==="1"?1:0;save();applyBrand();markaNot()});
+$("#fkZip").addEventListener("change",function(){S.zip=this.checked?1:0;save();$("#galeriNot").textContent="Galeri: "+galeriUrl()});
 function denemeNot(){$("#denemeNot").textContent=S.deneme
   ?"AÇIK — çekimler booth360/_deneme klasörüne gider, sayaç ve maliyet artmaz, misafir galerisine düşmez. Etkinlik başlarken KAPAT."
   :"Kapalı — çekimler etkinlik klasörüne ve galerisine gidiyor."}
@@ -768,7 +837,7 @@ function drawQR(text){
 window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl,pageUrl:pageUrl,ready:ready,go:go,
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
-  galeriUrl:galeriUrl,sayacMetin:sayacMetin,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,
+  galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
