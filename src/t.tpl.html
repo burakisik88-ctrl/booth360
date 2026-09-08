@@ -159,28 +159,56 @@ $("#run").onclick=function(){
     })})
   /* 2 — ayarlar */
   .then(function(){d=add("Ayarlar");
-    var eks=[];if(!S.cldName)eks.push("cloud adı");if(!S.cldPreset)eks.push("upload preset");if(!S.evt)eks.push("etkinlik adı");
-    if(eks.length)set(d,eks.indexOf("etkinlik adı")>=0&&eks.length===1?"warn":"err","Eksik: "+eks.join(", ")+". Panel → ilgili alanı doldur.");
-    else set(d,"ok","cloud: "+CLD+" · preset: "+PRE+" · etkinlik: "+S.evt+" ("+slug()+")");
+    /* CLD/PRE varsayılana düşebiliyor; asıl soru "çalışıyor mu", "hafızada yazıyor mu" değil */
+    var kurulmus=!!(S.cldName&&S.cldPreset), evtVar=!!S.evt;
+    var t=[];
+    t.push("cloud: "+CLD+" · preset: "+PRE);
+    t.push("etkinlik: "+(evtVar?(S.evt+" ("+slug()+")"):"YAZILMAMIŞ — videolar «etkinlik» klasörüne gider"));
+    if(!CLD||!PRE)set(d,"err","Bulut ayarı yok. Panel → Dijital Teslim → cloud name ve upload preset yaz.");
+    else if(!kurulmus)set(d,"warn",t.join(" · ")+" — bu telefona ayar yüklenmemiş, program varsayılanlarla çalışıyor. Kendi kurulumun için ayar bağlantısını aç ya da panelden doldur.");
+    else if(!evtVar)set(d,"warn",t.join(" · ")+" — etkinlik adı yazılmadan başlama, sonradan değiştirirsen eski videolar eski klasörde kalır.");
+    else set(d,"ok",t.join(" · "));
     if(S.deneme){var w=add("DENEME MODU AÇIK");set(w,"warn","Çekimler sayaca ve misafir galerisine yazmaz. Etkinlik başlarken panelden KAPAT.")}
   })
   /* 3 — kamera */
   .then(function(){d=add("Kamera");
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){set(d,"err","Tarayıcı kamerayı vermiyor. Safari kullan, sayfayı https ile aç.");return}
-    return navigator.mediaDevices.getUserMedia({video:{facingMode:(S.kamera==="environment"?"environment":"user"),width:{ideal:1440},height:{ideal:1920},frameRate:{ideal:60}},audio:false})
-      .then(function(st){
+    /* Booth'un yaptığının AYNISI: birkaç aday denenir, DİKEY ve en geniş olan seçilir.
+       Tek istek deneyip "yatay geliyor" demek yanlış alarm veriyordu — booth zaten sıradakine geçiyor. */
+    var fm=(S.kamera==="environment")?"environment":"user", genis=(S.kadraj!=="standart");
+    var cands=genis?[
+      {video:{facingMode:fm,width:{ideal:1440},height:{ideal:1920},frameRate:{ideal:60}},audio:false},
+      {video:{facingMode:fm,width:{ideal:1920},height:{ideal:1440},frameRate:{ideal:60}},audio:false},
+      {video:{facingMode:fm,aspectRatio:{ideal:0.75},height:{ideal:1920},frameRate:{ideal:60}},audio:false},
+      {video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false}
+    ]:[{video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false}];
+    var gunluk=[],en=null,i=0;
+    function dur(r){try{r.st.getTracks().forEach(function(t){t.stop()})}catch(e){}}
+    function dene(){
+      if(i>=cands.length)return Promise.resolve();
+      var ci=i;i++;
+      return navigator.mediaDevices.getUserMedia(cands[ci]).then(function(st){
         var v=document.createElement("video");v.muted=true;v.playsInline=true;v.srcObject=st;
-        return v.play().catch(function(){}).then(function(){return new Promise(function(r){setTimeout(r,600)})}).then(function(){
+        return v.play().catch(function(){}).then(function(){return new Promise(function(r){setTimeout(r,450)})}).then(function(){
           var w=v.videoWidth,h=v.videoHeight,sg={};try{sg=st.getVideoTracks()[0].getSettings()||{}}catch(e){}
-          var fps=Math.round(sg.frameRate||0);
-          st.getTracks().forEach(function(t){t.stop()});
-          var dik=h>w, oran=w&&h?(w/h):0;
-          var msg=w+"×"+h+" @"+fps+"fps · "+(dik?"dikey":"YATAY")+" · en/boy "+oran.toFixed(2);
-          if(!dik)set(d,"err",msg+" — telefon YATAY kare veriyor, video yarım görünür. Telefonu dik tut, uygulamayı kapatıp aç.");
-          else if(fps&&fps<30)set(d,"warn",msg+" — kare hızı düşük, ağır çekim kalitesi zayıf olur. Işığı artır.");
-          else set(d,"ok",msg+(oran>=0.7?" (geniş kadraj ✔)":" (dar kadraj — Panel → Kadraj'ı 'En geniş' yap)"));
-        });
-      },function(e){set(d,"err","Kamera izni verilmedi ("+((e&&e.name)||"hata")+"). Safari → Ayarlar → Kamera → İzin ver.")});
+          var r={st:st,w:w,h:h,fps:Math.round(sg.frameRate||0),ci:ci};
+          gunluk.push((ci+1)+": "+w+"×"+h+(h>w?"":" YATAY"));
+          var dikey=w&&h&&h>w, oran=w&&h?w/h:0;
+          if(!genis){en=r;return}
+          if(dikey&&oran>=0.7){if(en)dur(en);en=r;i=cands.length;return}   /* aradığımız: dikey + geniş */
+          if(dikey&&(!en||oran>(en.w/en.h))){if(en)dur(en);en=r;return}
+          dur(r);
+        }).then(dene);
+      },function(e){gunluk.push((ci+1)+": izin/hata");return dene()});
+    }
+    return dene().then(function(){
+      if(!en){set(d,"err","Hiçbir kamera ayarı dikey kare vermedi. Denenenler → "+gunluk.join(" | ")+". Telefonu dik tut ve Safari'yi kapatıp aç.");return}
+      var w=en.w,h=en.h,fps=en.fps,oran=w/h;dur(en);
+      var msg=w+"×"+h+" @"+fps+"fps · dikey · en/boy "+oran.toFixed(2)+"  (aday "+(en.ci+1)+"/"+cands.length+")";
+      if(fps&&fps<30)set(d,"warn",msg+" — kare hızı düşük, ağır çekim takılır. Platformu daha iyi aydınlat.");
+      else if(oran<0.7)set(d,"warn",msg+" — kadraj dar, misafir çerçeveye zor sığar. Panel → Kadraj'ı 'En geniş' yap.");
+      else set(d,"ok",msg+" · geniş kadraj ✔"+(fps<50?"  — 30 fps; ağır çekim akıcı ama sinema gibi değil, bu telefonun sınırı":""));
+    });
   })
   /* 4 — MediaRecorder + test klibi */
   .then(function(){d=add("Video kaydı (MediaRecorder)");
@@ -250,7 +278,7 @@ $("#run").onclick=function(){
         var u=B360E.url(sp),cikti=B360E.plan(sp).out;
         return bekle(u,110).then(function(r){
           toplamSn+=cikti;
-          if(r.s===200)set(dd,"ok","Hazırlandı ✔ "+r.sn+" sn'de · çıktı ≈"+Math.round(cikti)+" sn · maliyet ≈"+tl(cikti).toFixed(2)+" TL");
+          if(r.s===200)set(dd,"ok","Hazırlandı ✔ "+r.sn+" sn'de · test klibinden çıktı ≈"+Math.round(cikti)+" sn ("+tl(cikti).toFixed(2)+" TL). Gerçek 15 sn'lik çekimde bu şablon ≈"+tl(cikti*(15/(window.__v.dur||1.4))).toFixed(2)+" TL.");
           else set(dd,"err","HAZIRLANAMADI (HTTP "+r.s+") — bu şablonu panelden kapat. "+(r.e||""));
         });
       });

@@ -139,6 +139,44 @@ with sync_playwright() as p:
     ok("deneme modu uyarısı çıktı", any("DENEME" in x["ad"] for x in r3))
     ok("bağlantı açılışında JS hatası yok", not e3, "; ".join(e3)[:160])
     ctx3.close()
+
+    # ---------- D) ORTAĞIN YAŞADIĞI SENARYO: hiç ayar yok + kamera ilk adayda YATAY veriyor ----------
+    #  Eski hâlde ikisi de KIRMIZI çıkıyordu; oysa program ikisinde de sorunsuz çalışıyor.
+    ctx4 = br.new_context(viewport={"width": 430, "height": 932}, permissions=["camera"])
+    ctx4.route("**/*cloudinary.com/**", route)
+    e4 = []
+    p4 = ctx4.new_page()
+    p4.on("pageerror", lambda e: e4.append(str(e)))
+    p4.add_init_script("try{localStorage.removeItem('booth360.v1')}catch(e){}")
+    # ilk aday YATAY kare versin, ikinci aday dikey — booth'un yaptığı gibi sıradakine geçilmeli
+    p4.add_init_script("""
+      (function(){
+        var ger=navigator.mediaDevices.getUserMedia.bind(navigator.mediaDevices), n=0;
+        navigator.mediaDevices.getUserMedia=function(cs){
+          n++;
+          var v=(cs&&cs.video)||{};
+          var w=(v.width&&v.width.ideal)||1080, h=(v.height&&v.height.ideal)||1920;
+          if(n===1){var t=w;w=h;h=t}                       /* 1. aday: yatay */
+          return ger({video:{width:{exact:w},height:{exact:h}},audio:false});
+        };
+      })();""")
+    p4.goto(BASE + "t.html"); p4.wait_for_selector("#run")
+    p4.click("#run"); p4.wait_for_selector("#sum:not([hidden])", timeout=180000)
+    r4 = p4.evaluate("""Array.from(document.querySelectorAll('#list .it')).map(function(d){
+        return {ad:d.querySelector('.nm').textContent, dur:d.className.replace('it','').trim(),
+                ds:d.querySelector('.ds').textContent}})""")
+    def s4(ad): return next((x for x in r4 if x["ad"] == ad), {})
+    ay = s4("Ayarlar")
+    ok("ayar yüklenmemiş telefon HATA değil, uyarı veriyor", ay.get("dur") == "warn", ay.get("ds", "")[:90])
+    ok("ayar satırı gerçekte kullanılan cloud adını yazıyor", "rqhgtbvd" in ay.get("ds", ""))
+    ka = s4("Kamera")
+    ok("ilk aday yatay gelse de kamera HATA vermiyor (booth sıradakini deniyor)",
+       ka.get("dur") in ("ok", "warn"), ka.get("ds", "")[:90])
+    ok("kamera satırı seçilen adayı yazıyor", "aday" in ka.get("ds", ""))
+    yu = s4("Buluta yükleme")
+    ok("bu telefonda yükleme yine de çalışıyor", yu.get("dur") == "ok", yu.get("ds", "")[:70])
+    ok("D senaryosunda JS hatası yok", not e4, "; ".join(e4)[:160])
+    ctx4.close()
     br.close()
 
 bad = [r for r in res if not r[1]]
