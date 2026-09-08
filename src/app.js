@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.7.0";
+var VER="v0.7.1";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -153,6 +153,31 @@ function bulutSayim(cb){
     if(cb)cb(bulut);
   });
 }
+/* AYNI ADLA İKİNCİ İŞ: etiket etkinlik adından türüyor. Ad değişmezse iki ayrı düğün
+   aynı klasöre, aynı galeriye, aynı sayaca düşer — misafir öbür işin videosunu görür.
+   Buluttaki EN YENİ videonun günü bugünden eskiyse ad bayattır. */
+function isoGun(iso){
+  try{var d=new Date(iso);if(isNaN(d))return "";
+    return d.getFullYear()+"-"+("0"+(d.getMonth()+1)).slice(-2)+"-"+("0"+d.getDate()).slice(-2)}catch(e){return ""}
+}
+function gunYazi(iso){
+  try{return new Date(iso).toLocaleDateString("tr-TR",{day:"numeric",month:"long"})}catch(e){return ""}
+}
+function bayatAd(){
+  if(!bulut.son||!bulut.sayi)return "";
+  var g=isoGun(bulut.son);
+  if(!g||g>=bugun())return "";
+  return "«"+(S.evt||"etkinlik")+"» adı altında zaten "+bulut.sayi+" video var, sonuncusu "+
+         gunYazi(bulut.son)+". Bugün YENİ bir iş yapıyorsan etkinlik adını değiştir — "+
+         "yoksa iki iş aynı galeriye düşer, misafir öbür işin videolarını görür.";
+}
+function sayacYaz(){
+  var e=$("#sayacNot");if(!e)return;
+  e.textContent=sayacMetin();
+  var by=!!bayatAd();
+  e.classList.toggle("uyari",by);
+  e.classList.toggle("ok",!by);
+}
 function sayacMetin(){
   var k=evSlug(),o=(S.sayac||{})[k]||{};
   var b=(bulut.sayi!==null)?bulut.sayi:null;
@@ -161,8 +186,10 @@ function sayacMetin(){
   else if(bulut.hata)t.push("Bulut sayımı okunamadı ("+bulut.hata+") — aşağıdaki yalnız BU telefonun rakamı");
   t.push("Bu telefon: "+(o.cekim||0)+" çekim, "+(o.teslim||0)+" teslim · bugün "+((o.gun||{})[bugun()]||0));
   if(o.son)t.push("son: "+o.son);
-  if(!o.cekim&&b===null)return "Bu etkinlikte henüz çekim yok.";
-  return "«"+(S.evt||"etkinlik")+"»  ·  "+t.join("  ·  ");
+  var by=bayatAd();
+  if(!o.cekim&&b===null&&!by)return "Bu etkinlikte henüz çekim yok.";
+  var g="«"+(S.evt||"etkinlik")+"»  ·  "+t.join("  ·  ");
+  return by?("⚠ "+by+"\n"+g):g;
 }
 function evSlug(){
   var s=(S.evt||"etkinlik").toString().toLowerCase();
@@ -283,8 +310,8 @@ function fillAdmin(){
   $("#fKredi").value=tlKredi();
   $("#maliyetNot").textContent=maliyetMetin();
   durumYaz();
-  $("#sayacNot").textContent=sayacMetin();
-  bulutSayim(function(){$("#sayacNot").textContent=sayacMetin()});
+  sayacYaz();
+  bulutSayim(function(){sayacYaz()});
   $("#galeriNot").textContent="Galeri: "+galeriUrl();
   $("#camInfo").textContent=(S.lastCam?("Son çekim: "+S.lastCam):"Henüz çekim yok.")+(S.camLog?("  ·  Denenen: "+S.camLog):"");
   var fs=$("#fSure");if(!Array.prototype.some.call(fs.options,function(o){return o.value===String(S.sure)})){var op=document.createElement("option");op.value=String(S.sure);op.textContent=S.sure+" saniye";fs.appendChild(op)}
@@ -331,11 +358,11 @@ function galeriUrl(){return pageBase()+"g.html#c="+encodeURIComponent(S.cldName)
 $("#galeriAc").onclick=function(){window.open(galeriUrl(),"_blank")};
 $("#galeriKopya").onclick=function(){var b=$("#galeriKopya");try{navigator.clipboard.writeText(galeriUrl()).then(function(){b.textContent="Kopyalandı"})}catch(e){}
   setTimeout(function(){b.textContent="Galeri bağlantısını kopyala"},2500)};
-$("#sayacSifirla").onclick=function(){if(S.sayac)delete S.sayac[evSlug()];save();$("#sayacNot").textContent=sayacMetin();$("#maliyetNot").textContent=maliyetMetin()};
+$("#sayacSifirla").onclick=function(){if(S.sayac)delete S.sayac[evSlug()];save();sayacYaz();$("#maliyetNot").textContent=maliyetMetin()};
 $("#raporAc").onclick=function(){window.open(raporUrl(),"_blank")};
 $("#raporKopya").onclick=function(){var b=$("#raporKopya");try{navigator.clipboard.writeText(raporUrl()).then(function(){b.textContent="Kopyalandı"})}catch(e){}
   setTimeout(function(){b.textContent="Rapor bağlantısını kopyala"},2500)};
-$("#sayacYenile").onclick=function(){$("#sayacNot").textContent="Buluttan sayılıyor…";bulutSayim(function(){$("#sayacNot").textContent=sayacMetin()})};
+$("#sayacYenile").onclick=function(){$("#sayacNot").textContent="Buluttan sayılıyor…";bulutSayim(function(){sayacYaz()})};
 $("#fSesli").addEventListener("change",function(){S.sesli=this.value==="1"?1:0;save();if(S.sesli)bip(880,120)});
 $("#fPin").addEventListener("input",function(){var v=this.value.replace(/\D/g,"").slice(0,4);this.value=v;if(v.length===4){S.pin=v;save()}});
 $("#fYonerge").addEventListener("input",function(){S.yonerge=this.value;save()});
@@ -838,6 +865,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();

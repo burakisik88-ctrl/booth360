@@ -322,8 +322,24 @@ $("#run").onclick=function(){
   .then(function(){d=add("Etkinlik galerisi");
     return fetch("https://res.cloudinary.com/"+encodeURIComponent(CLD)+"/video/list/"+encodeURIComponent(slug()+"-360")+".json",{cache:"no-store"})
       .then(function(r){
-        if(r.status===200)return r.json().then(function(j){set(d,"ok",((j.resources||[]).length)+" video listeleniyor. Galeri bağlantısı çalışıyor.")});
-        if(r.status===404)set(d,"ok","Liste boş (bu etkinlikte henüz video yok) — kısıt yok, galeri çalışacak.");
+        if(r.status===200)return r.json().then(function(j){
+          var rs=(j.resources||[]).filter(function(x){return String(x.public_id||"").indexOf("/_")<0});
+          var zs=rs.map(function(x){return x.created_at||""}).filter(Boolean).sort();
+          var son=zs[zs.length-1]||"";
+          /* AYNI ADLA İKİNCİ İŞ — sahada en pahalı hata: ad değişmezse iki düğün
+             aynı galeriye düşer, misafir öbür işin videolarını görür. */
+          var bugun=(function(){var t=new Date();return t.getFullYear()+"-"+("0"+(t.getMonth()+1)).slice(-2)+"-"+("0"+t.getDate()).slice(-2)})();
+          var sg="";try{var dd=new Date(son);if(!isNaN(dd))sg=dd.getFullYear()+"-"+("0"+(dd.getMonth()+1)).slice(-2)+"-"+("0"+dd.getDate()).slice(-2)}catch(e){}
+          if(rs.length&&sg&&sg<bugun){
+            var ty="";try{ty=new Date(son).toLocaleDateString("tr-TR",{day:"numeric",month:"long"})}catch(e){ty=sg}
+            set(d,"err","«"+(S.evt||"etkinlik")+"» adı altında zaten "+rs.length+" video var, sonuncusu "+ty+
+              ". BUGÜN YENİ BİR İŞ YAPIYORSAN panelden etkinlik adını değiştir — yoksa iki iş aynı galeriye ve aynı sayaca düşer, "+
+              "misafir öbür işin videolarını görür. Aynı işin devamıysa sorun yok.");
+            return;
+          }
+          set(d,"ok",rs.length+" video listeleniyor"+(rs.length?" (bugün başlamış — diğer booth da yazıyor olabilir)":"")+". Galeri bağlantısı çalışıyor.");
+        });
+        if(r.status===404)set(d,"ok","Liste boş — bu etkinlik adı temiz, yeni iş için hazır. Galeri çalışacak.");
         else set(d,"warn","Liste kapalı (HTTP "+r.status+"). Cloudinary → Settings → Security → 'Resource list' kısıtını kaldır. Karekod yine de çalışır.");
       },function(){set(d,"warn","Liste okunamadı — galeri sayfası boş görünebilir. Karekod teslimatı etkilenmez.")});
   })
