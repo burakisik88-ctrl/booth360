@@ -147,7 +147,7 @@ function tl(sn){return ((+S.krediTl||21.31)*(sn/250))}
 
 $("#run").onclick=function(){
   $("#run").disabled=true;L.innerHTML="";rap=[];hata=0;uyari=0;$("#sum").hidden=true;$("#kopya").hidden=true;
-  var t0=Date.now(),toplamSn=0;
+  var t0=Date.now(),toplamSn=0,gercekSn=[];
   var d;
   Promise.resolve()
   /* 1 — internet */
@@ -171,17 +171,23 @@ $("#run").onclick=function(){
     if(S.deneme){var w=add("DENEME MODU AÇIK");set(w,"warn","Çekimler sayaca ve misafir galerisine yazmaz. Etkinlik başlarken panelden KAPAT.")}
   })
   /* 3 — kamera */
-  .then(function(){d=add("Kamera");
+  .then(function(){d=add("Kamera");var HZ=(S.hizKare!==0)?{min:50,ideal:60}:{ideal:60};
     if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){set(d,"err","Tarayıcı kamerayı vermiyor. Safari kullan, sayfayı https ile aç.");return}
     /* Booth'un yaptığının AYNISI: birkaç aday denenir, DİKEY ve en geniş olan seçilir.
        Tek istek deneyip "yatay geliyor" demek yanlış alarm veriyordu — booth zaten sıradakine geçiyor. */
     var fm=(S.kamera==="environment")?"environment":"user", genis=(S.kadraj!=="standart");
     var cands=genis?[
-      {video:{facingMode:fm,width:{ideal:1440},height:{ideal:1920},frameRate:{ideal:60}},audio:false},
-      {video:{facingMode:fm,width:{ideal:1920},height:{ideal:1440},frameRate:{ideal:60}},audio:false},
-      {video:{facingMode:fm,aspectRatio:{ideal:0.75},height:{ideal:1920},frameRate:{ideal:60}},audio:false},
-      {video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false}
-    ]:[{video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:{ideal:60}},audio:false}];
+      {video:{facingMode:fm,width:{ideal:1440},height:{ideal:1920},frameRate:HZ},audio:false},
+      {video:{facingMode:fm,width:{ideal:1920},height:{ideal:1440},frameRate:HZ},audio:false},
+      {video:{facingMode:fm,aspectRatio:{ideal:0.75},height:{ideal:1920},frameRate:HZ},audio:false},
+      {video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:HZ},audio:false}
+    ]:[{video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:HZ},audio:false}];
+    /* booth ile AYNI iki turlu sıra: önce 60 fps dayatan adaylar, sonra normal */
+    if(S.hizKare!==0){
+      var yavas=cands.map(function(c){var k=JSON.parse(JSON.stringify(c));k.video.frameRate={ideal:60};return k});
+      cands=cands.concat(yavas);
+    }
+    var YARI=cands.length/2;
     var gunluk=[],en=null,i=0;
     function dur(r){try{r.st.getTracks().forEach(function(t){t.stop()})}catch(e){}}
     function dene(){
@@ -195,8 +201,10 @@ $("#run").onclick=function(){
           gunluk.push((ci+1)+": "+w+"×"+h+(h>w?"":" YATAY"));
           var dikey=w&&h&&h>w, oran=w&&h?w/h:0;
           if(!genis){en=r;return}
-          if(dikey&&oran>=0.7){if(en)dur(en);en=r;i=cands.length;return}   /* aradığımız: dikey + geniş */
-          if(dikey&&(!en||oran>(en.w/en.h))){if(en)dur(en);en=r;return}
+          var hizliTur=(S.hizKare!==0)&&ci<YARI;
+          if(dikey&&oran>=0.7&&(hizliTur?r.fps>=50:true)){if(en)dur(en);en=r;i=cands.length;return}
+          if(dikey){var eb=en?en.w/en.h:0;
+            if(!en||oran>eb+0.02||(Math.abs(oran-eb)<=0.02&&r.fps>en.fps)){if(en)dur(en);en=r;return}}
           dur(r);
         }).then(dene);
       },function(e){gunluk.push((ci+1)+": izin/hata");return dene()});
@@ -209,7 +217,8 @@ $("#run").onclick=function(){
       var msg=w+"×"+h+" @"+fps+"fps · dikey · en/boy "+oran.toFixed(2)+"  (aday "+(en.ci+1)+"/"+cands.length+")";
       if(fps&&fps<30)set(d,"warn",msg+" — kare hızı düşük, ağır çekim takılır. Platformu daha iyi aydınlat.");
       else if(oran<0.7)set(d,"warn",msg+" — kadraj dar, misafir çerçeveye zor sığar. Panel → Kadraj'ı 'En geniş' yap.");
-      else set(d,"ok",msg+" · geniş kadraj ✔"+(fps<50?"  — 30 fps; ağır çekim akıcı ama sinema gibi değil, bu telefonun sınırı":""));
+      else if(fps>=50)set(d,"ok",msg+" · geniş kadraj ✔ · "+fps+" fps — ağır çekim AKICI. Bu telefondan alınabilecek en iyisi.");
+      else set(d,"warn",msg+" · geniş kadraj ✔ — bu telefon geniş kadrajda "+fps+" fps veriyor. Ağır çekimde görüntü yarı hıza inince "+Math.round(fps/2)+" fps görünür, göz takılmayı seçer. Daha akıcı isteniyorsa Panel → Kadraj'ı bir kademe dar seç ve kontrolü tekrar çalıştır; telefon o çözünürlükte 60 fps verebilir.");
     });
   })
   /* 3b — AĞIR ÇEKİM TAVANI: tarayıcı bu telefondan kaç fps almamıza izin veriyor?
@@ -298,11 +307,16 @@ $("#run").onclick=function(){
           l:S.logoPid||"",lp:S.logoPoz||"ne",lw:S.logoW||"0.22",
           m:(S.tplMusic&&S.tplMusic[t.id])||S.muzikSec||"",
           x:(pak==="efektli"&&S.fxMode!=="off")?(S.fxMode||"green"):"off",fp:FXP,
-          k:(S.kadraj==="genis916")?"g916":"",o:Object.assign({tol:S.fxTol||25},S.flags||{})};
+          k:({genis916:"g916",genis916d:"g916d",genis916k:"g916k"}[S.kadraj])||"",o:Object.assign({tol:S.fxTol||25},S.flags||{})};
         var u=B360E.url(sp),cikti=B360E.plan(sp).out;
+        /* GERÇEK çekimin maliyeti motordan hesaplanır — test klibinden ORANLA BÜYÜTÜLMEZ.
+           Şablonun çıktı süresi girişe doğrusal değil: 1.4 sn'lik klipte oran ~5.7×,
+           15 sn'lik çekimde ~1.2×. Doğrusal büyütme maliyeti 4 kat şişiriyordu. */
+        var ger=0;try{ger=B360E.plan(Object.assign({},sp,{d:(+S.sure||15)})).out}catch(e){}
+        gercekSn.push(ger);
         return bekle(u,110).then(function(r){
           toplamSn+=cikti;
-          if(r.s===200)set(dd,"ok","Hazırlandı ✔ "+r.sn+" sn'de · test klibinden çıktı ≈"+Math.round(cikti)+" sn ("+tl(cikti).toFixed(2)+" TL). Gerçek 15 sn'lik çekimde bu şablon ≈"+tl(cikti*(15/(window.__v.dur||1.4))).toFixed(2)+" TL.");
+          if(r.s===200)set(dd,"ok","Hazırlandı ✔ "+r.sn+" sn'de · test klibi ≈"+Math.round(cikti)+" sn çıktı ("+tl(cikti).toFixed(2)+" TL test bedeli). GERÇEK "+(+S.sure||15)+" sn'lik çekimde bu şablon ≈"+Math.round(ger)+" sn çıktı = "+tl(ger).toFixed(2)+" TL.");
           else set(dd,"err","HAZIRLANAMADI (HTTP "+r.s+") — bu şablonu panelden kapat. "+(r.e||""));
         });
       });
@@ -365,6 +379,18 @@ $("#run").onclick=function(){
     var sn=Math.round((Date.now()-t0)/1000),s=$("#sum");
     s.hidden=false;s.className="sum "+(hata?"err":"ok");
     var mal=toplamSn?("<br>Bu kontrol yaklaşık <b>"+tl(toplamSn).toFixed(2)+" TL</b> bulut maliyeti üretti ("+Math.round(toplamSn)+" sn render)."):"";
+    /* FİYATLANDIRMADAN ÖNCE OKUNACAK RAKAM — misafir başına gerçek bulut maliyeti.
+       Booth misafir seçerken ilk şablonu önden hazırlar; misafir onu seçerse tek render,
+       başkasını seçerse iki render ücretlenir. Aralık bu yüzden verilir. */
+    if(gercekSn.length){
+      var ort=gercekSn.reduce(function(a,b){return a+b},0)/gercekSn.length;
+      var dk=add("Misafir başına maliyet");
+      set(dk,"ok","Ortalama şablon "+Math.round(ort)+" sn çıktı = "+tl(ort).toFixed(2)+" TL. "+
+        "Booth ilk şablonu önden hazırladığı için misafir başına gerçek gider "+
+        tl(ort).toFixed(2)+"–"+tl(ort*2).toFixed(2)+" TL (seçtiği şablona göre). "+
+        "100 kişilik etkinlik ≈ "+Math.round(tl(ort)*100)+"–"+Math.round(tl(ort*2)*100)+" TL. "+
+        "Editsiz (ham) teslimde render yok, yalnız depolama.");
+    }
     s.innerHTML=hata
       ? '<span class="big">'+hata+' HATA var — böyle sahaya çıkma.</span><br>Kırmızı satırların altındaki yönergeyi uygula, kontrolü tekrar çalıştır.'+(uyari?(" ("+uyari+" uyarı da var.)"):"")+mal
       : '<span class="big">Her şey hazır.</span>'+(uyari?(" "+uyari+" uyarı var — okumakta fayda var, ama iş görür."):"")+'<br>'+sn+' saniyede tamamlandı.'+mal;

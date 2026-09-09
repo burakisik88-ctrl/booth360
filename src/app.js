@@ -1,11 +1,11 @@
 (function(){
 "use strict";
-var VER="v0.7.1";
+var VER="v0.7.2";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
-  fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,
+  fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,hizKare:1,
   flags:{zoom:1,flash:1,dbl:1,noise:0,du:1},
   kvkk:"Bu alanda çekilen videolar etkinlik boyunca saklanır ve yalnızca karekod ile size verilir.",
   otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0, logoZorunlu:0, hamKart:1,
@@ -524,8 +524,13 @@ $("#fxFile").addEventListener("change",function(){
 var stream=null,rec=null,chunks=[],recTimer=null,recWatch=null,lastBlobUrl="";
 var recBusy=false;
 $("#startBtn").onclick=function(){if(recBusy)return;recBusy=true;$("#startBtn").disabled=true;setTimeout(function(){$("#startBtn").disabled=false},1200);beginRec()};
-function camCands(fm,wide){
-  var fr={ideal:60};
+/* AĞIR ÇEKİM = KARE SAYISI. Yavaş segmentte hız yarıya iner: 30 fps kaynak → 15 fps
+   görünür, göz takılmayı görür. 60 fps kaynak → 30 fps, akıcı. Telefon çoğu zaman
+   en yüksek çözünürlükte 30, bir alt kademede 60 veriyor. Bu yüzden ÖNCE 60 dayatılır
+   (min:50 — desteklenmiyorsa getUserMedia hata verir, aday elenir), sonra normal tur.
+   Kazanan aday S.camPick'te saklanıyor; bedeli yalnız oturumun ilk çekiminde ödenir. */
+function camCands(fm,wide,hizli){
+  var fr=hizli?{min:50,ideal:60}:{ideal:60};
   if(!wide)return [{video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:fr},audio:false}];
   /* geniş kadraj: sensörün 4:3 modu. iOS bazı isteklerde kareyi yatay verir; adaylar sırayla denenir, DİKEY ve en geniş olan seçilir */
   return [
@@ -534,6 +539,10 @@ function camCands(fm,wide){
     {video:{facingMode:fm,aspectRatio:{ideal:0.75},height:{ideal:1920},frameRate:fr},audio:false},
     {video:{facingMode:fm,width:{ideal:1080},height:{ideal:1920},frameRate:fr},audio:false}
   ];
+}
+function tumCands(fm,wide){
+  if(!S.hizKare)return camCands(fm,wide,false);
+  return camCands(fm,wide,true).concat(camCands(fm,wide,false));
 }
 /* akışı aç, gerçek kare ölçüsünü oku (dikey mi, ne kadar geniş) */
 function probeStream(cs){
@@ -554,7 +563,7 @@ function beginRec(){
   var fm=(S.kamera==="environment")?"environment":"user",wide=(S.kadraj!=="standart");
   $("#cam").classList.toggle("mirror",fm==="user"); /* ön kamera önizlemesi ayna gibi; kayıt aynalanmaz */
   $("#cam").style.objectFit="cover"; /* önizleme tam ekran */
-  var cands=camCands(fm,wide),key=fm+"|"+(wide?"w":"s"),log=[],best=null,i=0;
+  var cands=tumCands(fm,wide),key=fm+"|"+(wide?"w":"s")+(S.hizKare?"|h":""),log=[],best=null,i=0;
   var pick=(S.camPick&&S.camPick[key]);
   if(typeof pick==="number"&&pick>=0&&pick<cands.length){cands=[cands[pick]].concat(cands.filter(function(_,j){return j!==pick}))}
   function stopIt(r){try{r.st.getTracks().forEach(function(t){t.stop()})}catch(e){}}
@@ -578,8 +587,17 @@ function beginRec(){
       r.ci=ci;log.push((ci+1)+": "+r.w+"×"+r.h+" @"+r.fps);
       var portrait=r.w&&r.h&&r.h>r.w,ratio=r.w&&r.h?r.w/r.h:0;
       if(!wide){finish(r);return}
-      if(portrait&&ratio>=0.7){finish(r);return}          /* dikey ve geniş (3:4) → istediğimiz */
-      if(portrait&&(!best||ratio>best.w/best.h)){if(best)stopIt(best);best=r}else stopIt(r); /* dikey ama dar: yedek */
+      /* Liste iki turlu: S.hizKare açıkken ilk yarı 60 fps dayatan adaylar, ikinci yarı normal.
+         Hızlı turda 50+ fps şartı aranır; normal turda aranmaz. */
+      var hizliTur=!!S.hizKare&&ci<cands.length/2;
+      var yeterFps=hizliTur?(r.fps>=50):true;
+      if(portrait&&ratio>=0.7&&yeterFps){finish(r);return}   /* dikey + geniş (3:4) + akıcı */
+      /* yedek: önce geniş kadraj, kadraj eşitse yüksek fps */
+      if(portrait){
+        var eb=best?best.w/best.h:0;
+        var iyi=!best||(ratio>eb+0.02)||(Math.abs(ratio-eb)<=0.02&&r.fps>best.fps);
+        if(iyi){if(best)stopIt(best);best=r}else stopIt(r);
+      }else stopIt(r);
       next();
     }).catch(function(e){log.push((ci+1)+": hata");next()});
   }
@@ -865,6 +883,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
