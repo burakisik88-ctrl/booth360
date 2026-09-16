@@ -238,8 +238,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         </select></div>
       <div class="note">Aynalama <b>açıkken</b> misafir kendini ayna gibi görür ama teslim edilen video aynalanmaz — çekim biter bitmez görüntü ters dönmüş gibi gelir. 360 booth'ta kol misafirin etrafında döndüğü için <b>kapalı</b> olması doğrusudur.</div>
       <div class="note" id="paketNot"></div>
-      <div class="fld"><div class="lbl">Kadraj</div>
-        <select id="fKadraj"><option value="genis916d">En geniş açı → 9:16, düz koyu bant (önerilen)</option><option value="genis916k">En geniş açı → 9:16, bant yok — kenarlardan kırpar</option><option value="genis916">En geniş açı → 9:16, bulanık bant</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select><div class="note">Kamera geniş (3:4) çekiyor, video 9:16 isteniyor. <b>Düz bant:</b> hiçbir şey kırpılmaz, alt-üstte logo için sakin bir alan kalır. <b>Bant yok:</b> tam ekran görüntü ama kenarlardan yaklaşık dörtte bir kırpılır. <b>Bulanık bant:</b> eski hal, bant baskın çıkıyordu.</div></div>
+      <div class="note">Kadraj artık <b>Bant yazısı</b> bölümündeki «Bant düzeni» ve «Bant kalınlığı» ile ayarlanıyor.</div>
       <div class="note" id="camInfo"></div>
     </div>
     <div class="grp">
@@ -247,7 +246,20 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="fld"><div class="lbl">Üst satır</div><input type="text" id="fUst" placeholder="OBSKURA 360"></div>
       <div class="fld"><div class="lbl">Başlık — vurgulamak istediğin kelimeyi *yıldız* içine al</div><input type="text" id="fBas" placeholder="Etrafında *dönen* an"></div>
       <div class="fld2">
-        <div class="fld"><div class="lbl">Vurgu rengi</div><input type="text" id="fRenk" placeholder="#F2A93B"></div>
+        <div class="fld"><div class="lbl">Vurgu rengi</div>
+          <select id="fRenkSec">
+            <option value="">Varsayılan (altın)</option>
+            <option value="#F2A93B">Altın</option>
+            <option value="#D4D4D4">Gümüş</option>
+            <option value="#F3EDE4">Beyaz</option>
+            <option value="#E5484D">Kırmızı</option>
+            <option value="#2B6CB0">Mavi</option>
+            <option value="#3FA45B">Yeşil</option>
+            <option value="#E86FA0">Pembe</option>
+            <option value="#9B6BDF">Mor</option>
+            <option value="ozel">Kendi renk kodum…</option>
+          </select>
+          <input type="text" id="fRenk" placeholder="#F2A93B" style="margin-top:8px" hidden></div>
         <div class="fld"><div class="lbl">Açılışta logo</div>
           <select id="fMarkaLogo"><option value="0">Gösterme</option><option value="1">Yüklü logoyu göster</option></select></div>
       </div>
@@ -256,6 +268,12 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
     <div class="grp">
       <h3>Şablonlar</h3>
       <div id="tplList"></div>
+      <div class="fld"><div class="lbl">Misafire şablon seçtirilsin mi?</div>
+        <select id="fDirekt">
+          <option value="1">Hayır — çekim biter bitmez karekod (önerilen)</option>
+          <option value="0">Evet — misafir şablon seçsin</option>
+        </select></div>
+      <div class="note">Hiçbir şablon işaretli değilse ham video doğrudan teslim edilir; bu da geçerli bir moddur.</div>
       <div class="note">İşaretli şablonlar misafir ekranında görünür; <b>ilk işaretli</b> şablon yüklemeden hemen sonra arka planda hazırlanır. Her şablona ayrı müzik seçebilirsin (boşsa "genel" müzik kullanılır). Az şablon = az bulut maliyeti.</div>
     </div>
     <div class="grp">
@@ -278,6 +296,40 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="fld" id="fBantAltTxtRow"><div class="lbl">Alt bant yazısı</div><input type="text" id="fBantAltTxt" placeholder="Kardiyovasküler Kongresi 2026"></div>
       <div class="fld" id="fBantUstTxtRow"><div class="lbl">Üst bant yazısı</div><input type="text" id="fBantUstTxt" placeholder="YOPI EVENTS"></div>
       <div class="fld2">
+        <div class="fld"><div class="lbl">Bant düzeni</div>
+          <select id="fBantYer">
+            <option value="ikisi">Alt + üst</option>
+            <option value="alt">Sadece alt</option>
+            <option value="ust">Sadece üst</option>
+            <option value="yok">Bantsız — tam ekran</option>
+          </select></div>
+        <div class="fld"><div class="lbl">Bant zemini</div>
+          <select id="fBantZemin">
+            <option value="0D0B0A">Düz koyu (önerilen)</option>
+            <option value="000000">Tam siyah</option>
+            <option value="FFFFFF">Beyaz</option>
+            <option value="blur">Bulanık görüntü</option>
+          </select></div>
+        <div class="fld"><div class="lbl">Bant kalınlığı</div>
+          <select id="fBantYuk">
+            <option value="240">Geniş — en geniş kadraj</option>
+            <option value="170">Orta (önerilen)</option>
+            <option value="120">Dar</option>
+          </select></div>
+      </div>
+      <div class="note">Bant ne kadar dar olursa görüntü kenarlardan o kadar çok kırpılır. Yazılar bant kalınlığına göre <b>kendiliğinden ortalanır</b>.</div>
+      <div class="fld"><div class="lbl">Yazı tipi</div>
+        <select id="fBantFont">
+          <option value="Montserrat">Montserrat — modern (önerilen)</option>
+          <option value="Oswald">Oswald — dar, kondense</option>
+          <option value="Poppins">Poppins — yuvarlak</option>
+          <option value="Playfair Display">Playfair Display — klasik serif</option>
+          <option value="Cinzel">Cinzel — antik, kurumsal</option>
+          <option value="Pacifico">Pacifico — kalın el yazısı</option>
+          <option value="Dancing Script">Dancing Script — ince el yazısı</option>
+          <option value="Great Vibes">Great Vibes — davetiye</option>
+        </select></div>
+      <div class="fld2">
         <div class="fld"><div class="lbl">Yazı rengi</div>
           <select id="fBantRenkSec">
             <option value="F3EDE4">Beyaz (sıcak)</option>
@@ -295,7 +347,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         <div class="fld"><div class="lbl">Yazı boyu</div>
           <select id="fBantBoy"><option value="36">Küçük</option><option value="46">Orta</option><option value="58">Büyük</option><option value="70">Çok büyük</option></select></div>
       </div>
-      <div class="fld"><div class="lbl">Kenardan uzaklık (piksel)</div><input type="number" id="fBantY" min="0" max="300" step="2"></div>
+      <div class="fld"><div class="lbl">İnce ayar — yazıyı kaydır (−40…+40 px)</div><input type="number" id="fBantKaydir" min="-40" max="40" step="2"></div>
       <div class="note" id="bantNot"></div>
     </div>
     <div class="grp">

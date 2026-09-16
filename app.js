@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.8.2";
+var VER="v0.9.0";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -12,6 +12,7 @@ var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",ca
   ust:"OBSKURA 360", bas:"Etrafında *dönen* an", renk:"", markaLogo:0, zip:0,
   bantUstMod:"yok", bantUstTxt:"", bantAltMod:"yok", bantAltTxt:"",
   bantRenk:"F3EDE4", bantBoy:46, bantY:92, bantFont:"Montserrat", ayna:0,
+  bantYer:"ikisi", bantYuk:170, bantZemin:"0D0B0A", bantKaydir:0, direkt:1,
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -110,7 +111,7 @@ function sayacArt(tip){
    Plus plan $99 / 225 kredi = $0,44 kredi → 48,44 TL kur ile 21,31 TL/kredi.
    AYNI adres ikinci kez istendiğinde Cloudinary tekrar ücret almaz — bu yüzden
    yalnız DAHA ÖNCE GÖRÜLMEMİŞ adresler sayılır. */
-var gorulenUrl={};
+var gorulenUrl={},qrHedef="";
 function tlKredi(){return +S.krediTl||21.31}
 function snTl(sn){return tlKredi()*(sn/250)}
 function maliyetEkle(u,sn){
@@ -259,8 +260,11 @@ function bantMetin(yer){
 }
 function bantAlan(){
   var u=bantMetin("ust"),a=bantMetin("alt");
-  if(!u&&!a)return {};
-  return {bu:u,ba:a,bc:S.bantRenk||"F3EDE4",bs:+S.bantBoy||46,by:+S.bantY||92,bf:S.bantFont||"Montserrat"};
+  /* yazı olmasa da bant DÜZENİ kadrajı belirler — geometri her zaman gider */
+  if(!u&&!a)return {bh:+S.bantYuk||0,bp:S.bantYer||"ikisi",bb:S.bantZemin||"0D0B0A"};
+  return {bu:u,ba:a,bc:S.bantRenk||"F3EDE4",bs:+S.bantBoy||46,by:+S.bantY||92,
+          bf:S.bantFont||"Montserrat",bh:+S.bantYuk||0,bp:S.bantYer||"ikisi",
+          bb:S.bantZemin||"0D0B0A",bo:+S.bantKaydir||0};
 }
 /* Bant yazısı kırpan kadrajda videonun ÜSTÜNE biner — bant yok çünkü. */
 function bantUyari(){
@@ -323,11 +327,11 @@ function cldUpload(file,kind,fields,onProg){
 
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
-  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";$("#fPaket").value=paketOf();
+  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fPaket").value=paketOf();
   paketNot();
   $("#fOto").value=S.otoDon;$("#fWake").value=S.wake?"1":"0";$("#fKvkk").value=S.kvkk||"";
   $("#fSesli").value=S.sesli?"1":"0";$("#fPin").value=PINK();$("#fYonerge").value=S.yonerge||"";
-  $("#fUst").value=S.ust||"";$("#fBas").value=S.bas||"";$("#fRenk").value=S.renk||"";
+  $("#fUst").value=S.ust||"";$("#fBas").value=S.bas||"";$("#fRenk").value=S.renk||"";markaRenkYaz();
   $("#fMarkaLogo").value=S.markaLogo?"1":"0";$("#fkZip").checked=!!S.zip;markaNot();
   $("#fkDeneme").checked=!!S.deneme;denemeNot();
   $("#fKredi").value=tlKredi();
@@ -351,7 +355,13 @@ function fillAdmin(){
   $("#fBantAltTxt").value=S.bantAltTxt||"";$("#fBantUstTxt").value=S.bantUstTxt||"";
   bantRenkYaz();$("#fBantBoy").value=String(S.bantBoy||46);
   $("#fAyna").value=S.ayna?"1":"0";
-  $("#fBantY").value=S.bantY||92;
+  $("#fBantYer").value=S.bantYer||"ikisi";
+  $("#fBantZemin").value=S.bantZemin||"0D0B0A";
+  $("#fBantYuk").value=String(S.bantYuk||170);
+  $("#fBantFont").value=S.bantFont||"Montserrat";
+  $("#fBantKaydir").value=+S.bantKaydir||0;
+  $("#fDirekt").value=S.direkt?"1":"0";
+  markaRenkYaz();
   bantYaz();fxDurumYaz();
   buildTplList();buildMuzikList();logoInfo();fxInfo();
   fxProbe(function(ch){if(ch)fxInfo()});
@@ -361,7 +371,6 @@ function fillAdmin(){
 $("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand();try{bantYaz()}catch(e){}});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
 $("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
-$("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save();try{bantYaz()}catch(e){}});
 function paketNot(){
   var p=paketOf(),t="";
   if(p==="editsiz")t="Misafir çekilen videoyu olduğu gibi alır. Şablon ekranı çıkmaz, karekod hemen gelir. Bulutta işlem yok — yalnız depolama/indirme.";
@@ -392,6 +401,14 @@ function tasmaUyari(metin){
   metin=String(metin||"").trim();if(!metin)return "";
   var boy=+S.bantBoy||46;
   var sigar=Math.floor(940/(0.55*boy));
+  var bandH=(S.bantYer==="yok")?9999:(+S.bantYuk||170);
+  /* Satır kutusu ≈ 1.2 × punto. Tek satır banda sığmıyorsa ya da metin sarıp
+     iki satır olacaksa (iki kutu) bant yetmez — ikisini de yakala. */
+  var satir=1.2*boy, sarar=metin.length>sigar;
+  var gerek=sarar?(2*satir):satir;
+  if(gerek>bandH-8)
+    return "«"+metin+"» bu punto"+(sarar?" ve uzunlukta":"")+" "+bandH+" px banda sığmaz — "+
+           (sarar?"yazıyı kısalt, ":"")+"puntoyu küçült ya da bandı kalınlaştır.";
   if(metin.length<=sigar)return "";
   var adlar={36:"Küçük",46:"Orta",58:"Büyük",70:"Çok büyük"};
   var oner=[36,46,58,70].filter(function(b){return metin.length<=Math.floor(940/(0.55*b))}).pop();
@@ -412,6 +429,25 @@ $("#fBantRenkSec").addEventListener("change",function(){
   else{S.bantRenk=this.value;$("#fBantRenk").hidden=true;$("#fBantRenk").value=this.value;save();bantYaz()}
 });
 $("#fAyna").addEventListener("change",function(){S.ayna=this.value==="1"?1:0;save()});
+/* Marka vurgu rengi de palet — kod yazmak zorunda kalınmasın (Burak, 16 Eyl). */
+var MARKA_RENKLER=["","#F2A93B","#D4D4D4","#F3EDE4","#E5484D","#2B6CB0","#3FA45B","#E86FA0","#9B6BDF"];
+function markaRenkYaz(){
+  var sec=$("#fRenkSec"),kutu=$("#fRenk");if(!sec||!kutu)return;
+  var k=String(S.renk||"");
+  var hazir=MARKA_RENKLER.indexOf(k)>=0;
+  sec.value=hazir?k:"ozel"; kutu.hidden=hazir; kutu.value=k;
+}
+$("#fRenkSec").addEventListener("change",function(){
+  if(this.value==="ozel"){$("#fRenk").hidden=false;$("#fRenk").focus();return}
+  S.renk=this.value;$("#fRenk").hidden=true;$("#fRenk").value=this.value;save();applyBrand();markaNot();
+});
+$("#fBantYer").addEventListener("change",function(){S.bantYer=this.value;save();bantYaz()});
+$("#fBantZemin").addEventListener("change",function(){S.bantZemin=this.value;save();bantYaz()});
+$("#fBantYuk").addEventListener("change",function(){S.bantYuk=+this.value||170;save();bantYaz()});
+$("#fBantFont").addEventListener("change",function(){S.bantFont=this.value;save();bantYaz()});
+$("#fBantKaydir").addEventListener("change",function(){
+  S.bantKaydir=Math.max(-40,Math.min(40,+this.value||0));this.value=S.bantKaydir;save();bantYaz()});
+$("#fDirekt").addEventListener("change",function(){S.direkt=this.value==="1"?1:0;save();try{otherGoster()}catch(e){}});
 function bantYaz(){
   var a=$("#fBantAltTxtRow"),u=$("#fBantUstTxtRow");
   if(a)a.hidden=(S.bantAltMod!=="ozel");
@@ -421,7 +457,12 @@ function bantYaz(){
   var t=[];
   if(ust)t.push("Üst bant: «"+ust+"»");
   if(alt)t.push("Alt bant: «"+alt+"»");
-  if(!t.length)t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
+  var yer=S.bantYer||"ikisi";
+  if(yer==="yok")t.push("Bantsız (tam ekran) — yazı görüntünün üstüne biner");
+  else t.push("Düzen: "+({ikisi:"alt + üst",alt:"sadece alt",ust:"sadece üst"}[yer])+" · "+(+S.bantYuk||170)+" px");
+  if(yer==="alt"&&ust)t.push("⚠ Düzen «sadece alt» — ÜST yazı videoda çıkmaz.");
+  if(yer==="ust"&&alt)t.push("⚠ Düzen «sadece üst» — ALT yazı videoda çıkmaz.");
+  if(!bantMetin("alt")&&!bantMetin("ust"))t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
   var uy=bantUyari();if(uy)t.push("⚠ "+uy);
   var ts=tasmaUyari(alt)||tasmaUyari(ust);if(ts)t.push("⚠ "+ts);
   if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
@@ -437,12 +478,12 @@ function fxDurumYaz(){
   n.textContent=acik.length?("Açık: "+acik.join(", ")):"TÜM EFEKTLER KAPALI — şablon yalnız hız/kesim uygular, renge dokunmaz.";
   n.classList.toggle("ok",!acik.length);
 }
-["fBantAltMod","fBantUstMod","fBantAltTxt","fBantUstTxt","fBantRenk","fBantBoy","fBantY"].forEach(function(id){
+["fBantAltMod","fBantUstMod","fBantAltTxt","fBantUstTxt","fBantRenk","fBantBoy"].forEach(function(id){
   var e=$("#"+id);if(!e)return;
   e.addEventListener(e.tagName==="SELECT"?"change":"input",function(){
     var m={fBantAltMod:"bantAltMod",fBantUstMod:"bantUstMod",fBantAltTxt:"bantAltTxt",
-           fBantUstTxt:"bantUstTxt",fBantRenk:"bantRenk",fBantBoy:"bantBoy",fBantY:"bantY"};
-    var k=m[id];S[k]=(k==="bantBoy"||k==="bantY")?(+this.value||(k==="bantBoy"?46:92)):this.value;
+           fBantUstTxt:"bantUstTxt",fBantRenk:"bantRenk",fBantBoy:"bantBoy"};
+    var k=m[id];S[k]=(k==="bantBoy")?(+this.value||46):this.value;
     if(k==="bantRenk")S[k]=String(this.value||"").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
     save();bantYaz();if(k==="bantRenk")try{var sc=$("#fBantRenkSec");sc.value=BANT_RENKLER.indexOf(S.bantRenk.toUpperCase())>=0?S.bantRenk.toUpperCase():"ozel"}catch(e){}
   });
@@ -547,12 +588,13 @@ function buildTplList(){
   E.TEMPLATES.forEach(function(t){
     var r=document.createElement("div");r.className="mrow";
     var ck=document.createElement("input");ck.type="checkbox";ck.style.cssText="width:22px;height:22px;accent-color:var(--amber)";
-    ck.checked=S.aktif.length?S.aktif.indexOf(t.id)>=0:true;
+    ck.checked=S.aktifKuruldu?(S.aktif.indexOf(t.id)>=0):(S.aktif.length?S.aktif.indexOf(t.id)>=0:true);
     ck.onchange=function(){
       var a=activeTpls().map(function(x){return x.id});
       if(ck.checked){if(a.indexOf(t.id)<0)a.push(t.id)}else a=a.filter(function(x){return x!==t.id});
       S.aktif=E.TEMPLATES.map(function(x){return x.id}).filter(function(id){return a.indexOf(id)>=0});
-      if(!S.aktif.length){S.aktif=[t.id];ck.checked=true}
+      S.aktifKuruldu=1;
+      /* hepsi kaldırılabilir — şablonsuz çalışmak meşru bir mod (Burak, 16 Eyl) */
       save();buildTplList();
     };
     var nm=document.createElement("div");nm.className="nm";nm.textContent=t.e+" "+t.n+(t.fx?" · FX: "+t.fx:"");
@@ -792,16 +834,39 @@ function uploadVideo(blobIn,deneme){
       bekleyen=null;
       curVid={pid:j.public_id,ver:j.version,dur:+j.duration||S.sure};
       $("#upBar").style.width="100%";mesgul=false;recBusy=false;
-      if(paketOf()==="editsiz"){ /* editsiz: şablon yok, ham video doğrudan karekoda */
-        selTpl={id:"ham",n:"Ham video",e:"🎥"};
-        lastUrl=tplUrl("ham");lastPage=pageUrl("ham");
-        $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
-        if(!S.deneme)sayacArt("teslim");drawQR(S.qrMod==="mp4"?lastUrl:lastPage);go("done");return;
-      }
       muzikAcik=!!(S.muzikSec||Object.keys(S.tplMusic).length);
-      if(S.warm)warm(activeTpls()[0].id);
+      var akt=activeTpls();
+      /* DOĞRUDAN TESLİM: misafire şablon seçtirme, karekodu hemen ver.
+         Editsiz pakette, hiç şablon işaretli değilse ya da S.direkt açıkken bu yol işler. */
+      if(paketOf()==="editsiz"||!akt.length||S.direkt){
+        var tid=(paketOf()==="editsiz"||!akt.length)?"ham":akt[0].id;
+        selTpl=(tid==="ham")?{id:"ham",n:"Ham video",e:"🎥"}:akt[0];
+        teslimEt(tid);return;
+      }
+      if(S.warm)warm(akt[0].id);
       buildStyleGrid();go("style");
     }).catch(function(e){upFail((e&&e.message)||"yanıt okunamadı",deneme)});
+}
+/* Tek teslim yolu: şablonu uygula, karekodu çiz, bitti ekranına git. */
+function teslimEt(tid){
+  lastUrl=tplUrl(tid);lastPage=pageUrl(tid);
+  $("#doneNote").textContent=S.qrMod==="mp4"
+    ? "Kamerayı karekoda tut, videon telefonuna insin."
+    : "Kamerayı karekoda tut — sayfa açılır: kaydet ya da paylaş.";
+  if(!S.deneme)sayacArt("teslim");
+  /* KAREKOD OKUNABİLİRLİĞİ: mp4 modunda karekod tüm dönüşüm zincirini taşır.
+     Bant yazısı + logo + müzik katmanlarıyla adres 800+ karaktere çıkıyor ve
+     telefon kamerası karekodu okuyamıyor. Uzunsa sessizce sayfa moduna düş —
+     misafirin karekodu okuyamaması en kötü sonuç. (qrtest, 16 Eyl 2026) */
+  var hedef=(S.qrMod==="mp4")?lastUrl:lastPage;
+  if(S.qrMod==="mp4"&&hedef&&hedef.length>480&&lastPage){
+    hedef=lastPage;
+    $("#doneNote").textContent="Kamerayı karekoda tut — sayfa açılır: kaydet ya da paylaş.";
+  }
+  qrHedef=hedef;
+  drawQR(hedef);
+  otherGoster();
+  go("done");
 }
 function upFail(m,deneme){
   if(deneme<3){ /* internet bir an gittiyse kendi kendine tekrar dener */
@@ -919,15 +984,11 @@ function openPreview(t){
     stat.textContent=(e&&e.message)||"";
   });
 }
+/* doğrudan teslimde misafir şablon değiştiremez */
+function otherGoster(){var b=$("#otherBtn");if(b)b.hidden=!!S.direkt||paketOf()==="editsiz"||!activeTpls().length}
 $("#otherBtn").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}go("style")};
-$("#useBtn").onclick=function(){
-  if(!selTpl)return;
-  lastUrl=tplUrl(selTpl.id);lastPage=pageUrl(selTpl.id);
-  var q=S.qrMod==="mp4"?lastUrl:lastPage;
-  $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
-  if(!S.deneme)sayacArt("teslim");drawQR(q);
-  go("done");
-};
+/* tek teslim yolu — karekod uzunluk koruması burada da geçerli olsun */
+$("#useBtn").onclick=function(){ if(selTpl)teslimEt(selTpl.id) };
 $("#yenidenBtn").onclick=function(){curVid=null;go("attract")};
 $("#styleBasa").onclick=function(){curVid=null;go("attract")};
 $("#prevBasa").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}curVid=null;go("attract")};
@@ -995,8 +1056,8 @@ function drawQR(text){
 
 window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl,pageUrl:pageUrl,ready:ready,go:go,
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
-  last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
+  last:function(){return {url:lastUrl,page:lastPage,qr:qrHedef}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();

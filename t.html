@@ -135,7 +135,31 @@ function plan(spec){
    g916  = bulanık bant (eski varsayılan — bant çok baskın oluyordu)
    g916d = düz koyu bant, logo yeri kalır ama ekranı kesmez  ← varsayılan
    g916k = bant yok, kenarlardan kırpar (tam ekran) */
-function kadraj(k){
+/* ---- BANT GEOMETRİSİ ----
+   Bant, 9:16 tuvale oturmayan görüntünün yanında kalan koyu şerittir.
+   Ne kadar DAR bant istenirse görüntü o kadar çok kenardan kırpılır — takas budur:
+     bant 240 px → içerik 1080×1440 (3:4, en geniş kadraj)
+     bant 170 px → içerik 1080×1580
+     bant 120 px → içerik 1080×1680
+     bantsız     → içerik 1080×1920 (tam ekran, kenarlar en çok kırpılır)
+   Düzen: ikisi (üst+alt eşit) · alt (içerik yukarı yaslanır) · üst · yok.
+   Tek bantta şerit seçilen yükseklikte kalır, iki katına çıkmaz. */
+function bantGeo(spec){
+  var yer=spec.bp||"ikisi", h=Math.max(0,Math.min(400,+spec.bh||0));
+  if(yer==="yok"||!h)return {yer:"yok",h:0,ic:1920};
+  var ic=(yer==="ikisi")?(1920-2*h):(1920-h);
+  return {yer:yer,h:h,ic:Math.max(600,ic)};
+}
+function kadraj(k,spec){
+  /* yeni yol: bant ayarları verilmişse geometri onlardan kurulur */
+  if(spec&&spec.bh!==undefined&&spec.bp){
+    var g=bantGeo(spec);
+    var zemin=(spec.bb==="blur")?"b_blurred:400:15":("b_rgb:"+(String(spec.bb||"0D0B0A").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"0D0B0A"));
+    if(g.yer==="yok")return "c_fill,w_1080,h_1920,g_center";
+    var yer=(g.yer==="alt")?",g_north":((g.yer==="ust")?",g_south":"");
+    return "c_fill,w_1080,h_"+g.ic+",g_center/c_pad,w_1080,h_1920"+yer+","+zemin;
+  }
+  /* eski kurulumlar bozulmasın */
   if(k==="g916")return "c_pad,w_1080,h_1920,b_blurred:400:15";
   if(k==="g916d")return "c_pad,w_1080,h_1920,b_rgb:0D0B0A";
   if(k==="g916k")return "c_fill,w_1080,h_1920,g_center";
@@ -155,11 +179,30 @@ function bantKat(metin,spec,yon){
   var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
   var boy=Math.max(18,Math.min(120,+spec.bs||46));
   var renk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
-  var y=Math.max(0,Math.min(400,+spec.by||92));
+  /* YAZIYI BANDA ORTALA: bant yüksekliği ve punto biliniyorsa y hesaplanır.
+     Montserrat/benzeri bold'da görünen harf yüksekliği ≈ 0.72 × punto.
+     y = (bant - harfYüksekliği) / 2 → şerit içinde ortalı durur. */
+  var g=bantGeo(spec), bandH=g.h;
+  /* tek bantta metin o şeride gider; iki bantta her ikisi de aynı yükseklikte */
+  var y;
+  if(bandH>0){
+    var harf=Math.round(0.72*boy);
+    y=Math.round((bandH-harf)/2);
+    y=Math.max(4,Math.min(bandH-harf-2,y));
+    if(!isFinite(y)||y<0)y=Math.round(bandH*0.25);
+  }else{
+    y=Math.max(0,Math.min(400,+spec.by||60));   /* bantsız: görüntünün üstünde, kenardan */
+  }
+  y=Math.max(0,y+(+spec.bo||0));                /* ince ayar: yukarı/aşağı kaydır */
   /* c_fit,w_940 → uzun kongre adi kesilmez, iki satira sarar. _center → satirlar ortalanir.
      Canlida dogrulandi (16 Eyl 2026, Turkce harfler dahil). */
   return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
           "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
+}
+function bantYonOk(spec,yon){
+  var yer=spec.bp||"ikisi";
+  if(yer==="ikisi"||yer==="yok")return true;
+  return (yer==="alt"&&yon==="alt")||(yer==="ust"&&yon==="ust");
 }
 function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())))}
 function chain(spec){
@@ -170,7 +213,7 @@ function chain(spec){
     else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
-  var kp=kadraj(spec.k);if(kp)parts.push(kp);
+  var kp=kadraj(spec.k,spec);if(kp)parts.push(kp);
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
     var fp=lid(spec.fp||"booth360/_fx");
     if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
@@ -181,8 +224,8 @@ function chain(spec){
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
   if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
   if(o.bant){
-    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
   }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
@@ -191,7 +234,7 @@ function chain(spec){
 /* ŞABLONSUZ: logo zorunlu değilse hiç bulut işlemi yok (sıfır kredi, anında hazır).
    Logo zorunluysa yalnız kadraj + logo basılır — şablon, efekt, müzik yok. */
 function hamChain(spec){
-  var parts=[],kp=kadraj(spec.k),o=flagsOf(spec);
+  var parts=[],kp=kadraj(spec.k,spec),o=flagsOf(spec);
   if(kp)parts.push(kp);
   if(o.logo&&spec.l){
     parts.push("l_"+lid(spec.l));
@@ -199,8 +242,8 @@ function hamChain(spec){
     parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
   }
   if(o.bant){
-    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
   }
   parts.push("q_auto");
   return parts.join("/");
@@ -224,21 +267,37 @@ function bar(spec){
 }
 /* QR sayfası için kısa kodlama */
 var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",renk:"g",bant:"b"};
+var KOK="booth360/";
+var VARSAY={lp:"ne",lw:"0.22",bc:"F3EDE4",bs:"46",bf:"Montserrat",by:"92",bp:"ikisi",bb:"0D0B0A",bo:"0",fp:"booth360/_fx"};
+function kis(k,v){ /* ortak klasör önekini at — karekod seyrek kalsın */
+  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
+}
+function uzat(k,v){
+  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
+}
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+    if(spec[k]===undefined||spec[k]===""||spec[k]===null)return;
+    var v=String(spec[k]);
+    if(VARSAY[k]!==undefined&&v===VARSAY[k])return;   /* varsayılanı yazma */
+    q.set(k,kis(k,v));
+  });
   var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
   q.set("o",s);q.set("tl",String(o.tol||25));
   return q.toString();
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+    spec[k]=q.has(k)?uzat(k,q.get(k)):VARSAY[k];
+    if(spec[k]===undefined)delete spec[k];
+  });
   var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
 }
-return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj,bantKat:bantKat,bantVar:bantVar,txtEnc:txtEnc};
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj,bantKat:bantKat,bantVar:bantVar,txtEnc:txtEnc,bantGeo:bantGeo,bantYonOk:bantYonOk};
 })();
 </script>
 <script>
