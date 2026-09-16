@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.8.0";
+var VER="v0.8.1";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -383,6 +383,20 @@ $("#fOto").addEventListener("change",function(){S.otoDon=Math.max(0,Math.min(600
 $("#fWake").addEventListener("change",function(){S.wake=this.value==="1"?1:0;save()});
 $("#fKvkk").addEventListener("input",function(){S.kvkk=this.value;save();applyBrand()});
 /* --- BANT YAZISI paneli --- */
+/* BANT TAŞMASI: metin 940 px'e sığmazsa Cloudinary iki satıra sarıyor; iki satır
+   240 px'lik banda sığmıyor, görüntünün üstüne taşıyor. Canlıda ölçüldü (16 Eyl 2026):
+   "Kardiyovasküler Kongresi 2026" → 58 px'te tek satır, 70 px'te 140 px olup 12 px taşıyor.
+   Montserrat bold ortalama karakter genişliği ≈ 0.55 × punto. */
+function tasmaUyari(metin){
+  metin=String(metin||"").trim();if(!metin)return "";
+  var boy=+S.bantBoy||46;
+  var sigar=Math.floor(940/(0.55*boy));
+  if(metin.length<=sigar)return "";
+  var adlar={36:"Küçük",46:"Orta",58:"Büyük",70:"Çok büyük"};
+  var oner=[36,46,58,70].filter(function(b){return metin.length<=Math.floor(940/(0.55*b))}).pop();
+  return "«"+metin+"» bu yazı boyunda banda sığmaz — iki satıra sarar ve görüntünün üstüne taşar. "+
+         (oner?("Yazı boyunu «"+adlar[oner]+"» yap."):"Yazıyı kısalt.");
+}
 function bantYaz(){
   var a=$("#fBantAltTxtRow"),u=$("#fBantUstTxtRow");
   if(a)a.hidden=(S.bantAltMod!=="ozel");
@@ -394,9 +408,10 @@ function bantYaz(){
   if(alt)t.push("Alt bant: «"+alt+"»");
   if(!t.length)t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
   var uy=bantUyari();if(uy)t.push("⚠ "+uy);
+  var ts=tasmaUyari(alt)||tasmaUyari(ust);if(ts)t.push("⚠ "+ts);
   if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
   n.textContent=t.join("  ·  ");
-  n.classList.toggle("err",!!uy);
+  n.classList.toggle("err",!!(uy||ts));
 }
 function fxDurumYaz(){
   var n=$("#fxDurum");if(!n)return;
@@ -964,6 +979,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
