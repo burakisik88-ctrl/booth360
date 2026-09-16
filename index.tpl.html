@@ -224,6 +224,11 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
           <select id="fSure"><option value="10">10 saniye</option><option value="15">15 saniye</option><option value="20">20 saniye</option></select></div>
         <div class="fld"><div class="lbl">Kamera</div>
           <select id="fKam"><option value="user">Ön kamera (ekran misafire bakar)</option><option value="environment">Arka kamera</option></select></div>
+        <div class="fld"><div class="lbl">Önizlemede aynalama</div>
+          <select id="fAyna">
+            <option value="0">Kapalı — ekranda ne görünüyorsa video da o (önerilen)</option>
+            <option value="1">Açık — ekran ayna gibi</option>
+          </select></div>
       </div>
       <div class="fld"><div class="lbl">Paket (satılan iş)</div>
         <select id="fPaket">
@@ -231,6 +236,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
           <option value="sablon">Editli · efektsiz — şablon var, efekt yok</option>
           <option value="efektli">Editli · efektli — şablon + efekt katmanı</option>
         </select></div>
+      <div class="note">Aynalama <b>açıkken</b> misafir kendini ayna gibi görür ama teslim edilen video aynalanmaz — çekim biter bitmez görüntü ters dönmüş gibi gelir. 360 booth'ta kol misafirin etrafında döndüğü için <b>kapalı</b> olması doğrusudur.</div>
       <div class="note" id="paketNot"></div>
       <div class="fld"><div class="lbl">Kadraj</div>
         <select id="fKadraj"><option value="genis916d">En geniş açı → 9:16, düz koyu bant (önerilen)</option><option value="genis916k">En geniş açı → 9:16, bant yok — kenarlardan kırpar</option><option value="genis916">En geniş açı → 9:16, bulanık bant</option><option value="genis">En geniş açı, 3:4 olduğu gibi</option><option value="standart">Standart 9:16 (daha yakın)</option></select><div class="note">Kamera geniş (3:4) çekiyor, video 9:16 isteniyor. <b>Düz bant:</b> hiçbir şey kırpılmaz, alt-üstte logo için sakin bir alan kalır. <b>Bant yok:</b> tam ekran görüntü ama kenarlardan yaklaşık dörtte bir kırpılır. <b>Bulanık bant:</b> eski hal, bant baskın çıkıyordu.</div></div>
@@ -272,7 +278,20 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="fld" id="fBantAltTxtRow"><div class="lbl">Alt bant yazısı</div><input type="text" id="fBantAltTxt" placeholder="Kardiyovasküler Kongresi 2026"></div>
       <div class="fld" id="fBantUstTxtRow"><div class="lbl">Üst bant yazısı</div><input type="text" id="fBantUstTxt" placeholder="YOPI EVENTS"></div>
       <div class="fld2">
-        <div class="fld"><div class="lbl">Yazı rengi</div><input type="text" id="fBantRenk" placeholder="F3EDE4"></div>
+        <div class="fld"><div class="lbl">Yazı rengi</div>
+          <select id="fBantRenkSec">
+            <option value="F3EDE4">Beyaz (sıcak)</option>
+            <option value="FFFFFF">Saf beyaz</option>
+            <option value="12100E">Siyah</option>
+            <option value="F2A93B">Altın</option>
+            <option value="D4D4D4">Gümüş</option>
+            <option value="E5484D">Kırmızı</option>
+            <option value="2B6CB0">Mavi</option>
+            <option value="3FA45B">Yeşil</option>
+            <option value="E86FA0">Pembe</option>
+            <option value="ozel">Kendi renk kodum…</option>
+          </select>
+          <input type="text" id="fBantRenk" placeholder="F3EDE4" style="margin-top:8px" hidden></div>
         <div class="fld"><div class="lbl">Yazı boyu</div>
           <select id="fBantBoy"><option value="36">Küçük</option><option value="46">Orta</option><option value="58">Büyük</option><option value="70">Çok büyük</option></select></div>
       </div>
