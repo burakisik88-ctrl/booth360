@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#12100E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OBSKURA 360">
 <title>OBSKURA 360</title>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Figtree:wght@400;500;600;800&display=swap">
@@ -248,9 +253,36 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="note">İşaretli şablonlar misafir ekranında görünür; <b>ilk işaretli</b> şablon yüklemeden hemen sonra arka planda hazırlanır. Her şablona ayrı müzik seçebilirsin (boşsa "genel" müzik kullanılır). Az şablon = az bulut maliyeti.</div>
     </div>
     <div class="grp">
+      <h3>Bant yazısı — videonun alt/üst bandına</h3>
+      <div class="note">Kadraj 3:4 kareyi 9:16'ya oturtunca alt ve üstte koyu birer bant kalıyor. Etkinlik adı oraya basılır ve <b>misafirin indirdiği her videoda</b> görünür. Şablonsuz (ham) videoda da çıkar.</div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Alt bant</div>
+          <select id="fBantAltMod">
+            <option value="yok">Yazı yok</option>
+            <option value="etkinlik">Etkinlik adını yaz</option>
+            <option value="ozel">Kendi yazım</option>
+          </select></div>
+        <div class="fld"><div class="lbl">Üst bant</div>
+          <select id="fBantUstMod">
+            <option value="yok">Yazı yok</option>
+            <option value="etkinlik">Etkinlik adını yaz</option>
+            <option value="ozel">Kendi yazım</option>
+          </select></div>
+      </div>
+      <div class="fld" id="fBantAltTxtRow"><div class="lbl">Alt bant yazısı</div><input type="text" id="fBantAltTxt" placeholder="Kardiyovasküler Kongresi 2026"></div>
+      <div class="fld" id="fBantUstTxtRow"><div class="lbl">Üst bant yazısı</div><input type="text" id="fBantUstTxt" placeholder="YOPI EVENTS"></div>
+      <div class="fld2">
+        <div class="fld"><div class="lbl">Yazı rengi</div><input type="text" id="fBantRenk" placeholder="F3EDE4"></div>
+        <div class="fld"><div class="lbl">Yazı boyu</div>
+          <select id="fBantBoy"><option value="36">Küçük</option><option value="46">Orta</option><option value="58">Büyük</option><option value="70">Çok büyük</option></select></div>
+      </div>
+      <div class="fld"><div class="lbl">Kenardan uzaklık (piksel)</div><input type="number" id="fBantY" min="0" max="300" step="2"></div>
+      <div class="note" id="bantNot"></div>
+    </div>
+    <div class="grp">
       <h3>Tur & Yüz Anı</h3>
       <div class="fld2">
-        <div class="fld"><div class="lbl">1 tur süresi (sn)</div><input type="number" id="fTur" min="2" max="60" step="0.1"></div>
+      <div class="fld"><div class="lbl">1 tur süresi (sn)</div><input type="number" id="fTur" min="2" max="60" step="0.1"></div>
         <div class="fld"><div class="lbl">İlk yüz anı (sn)</div><input type="number" id="fYuz" min="0" max="60" step="0.1"></div>
       </div>
       <div class="row" style="justify-content:flex-start;margin-top:4px">
@@ -327,7 +359,13 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <label class="ck"><input type="checkbox" id="fkZoom"> Zoom vuruşları (Kulüp)</label>
       <label class="ck"><input type="checkbox" id="fkFlash"> Flaş kareleri</label>
       <label class="ck"><input type="checkbox" id="fkNoise"> Film greni (Noir)</label>
+      <label class="ck"><input type="checkbox" id="fkRenk"> Renk filtresi (doygunluk / kontrast / siyah-beyaz)</label>
       <label class="ck"><input type="checkbox" id="fkDu"> FX ve müziği video süresine kırp (du_)</label>
+      <div class="row" style="margin-top:12px;justify-content:flex-start">
+        <button class="btn ghost mini" id="fxHepKapat">Tüm efektleri KAPAT</button>
+        <button class="btn ghost mini" id="fxHepAc">Hepsini aç</button>
+      </div>
+      <div class="note" id="fxDurum"></div>
       <div class="note">Canlı testte hata veren özellik buradan kapatılır; yeni sürüm beklemeden devam edilir.</div>
     </div>
     <div class="grp">
@@ -409,7 +447,7 @@ var B360E=(function(){
 "use strict";
 function r2(x){return Math.round(x*100)/100}
 function lid(p){return String(p).replace(/\//g,":")}
-var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,tol:25};
+var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,renk:1,bant:1,tol:25};
 var POS={ne:"g_north_east,x_0.04,y_0.03",nw:"g_north_west,x_0.04,y_0.03",se:"g_south_east,x_0.04,y_0.04",sw:"g_south_west,x_0.04,y_0.04",s:"g_south,y_0.04",n:"g_north,y_0.03"};
 
 /* ---- ŞABLONLAR ----
@@ -489,6 +527,27 @@ function kadraj(k){
   if(k==="g916k")return "c_fill,w_1080,h_1920,g_center";
   return "";
 }
+/* ---- BANT YAZISI ----
+   Kadraj 3:4 kareyi 9:16'ya oturtunca alt-ustte 240'ar piksel bant kaliyor.
+   Etkinlik adi oraya basiliyor; her indirilen videoda gorunuyor.
+   Cloudinary metin katmani: l_text:<font>_<boy>_bold:<metin>,co_rgb:...
+   Metin URL-encode edilir; "," ve "/" URL yapisini bozdugu icin CIFT encode sart. */
+function txtEnc(t){
+  var e=encodeURIComponent(String(t||"").trim());
+  return e.replace(/%2C/gi,"%252C").replace(/%2F/gi,"%252F");
+}
+function bantKat(metin,spec,yon){
+  var t=txtEnc(metin);if(!t)return [];
+  var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
+  var boy=Math.max(18,Math.min(120,+spec.bs||46));
+  var renk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+  var y=Math.max(0,Math.min(400,+spec.by||92));
+  /* c_fit,w_940 → uzun kongre adi kesilmez, iki satira sarar. _center → satirlar ortalanir.
+     Canlida dogrulandi (16 Eyl 2026, Turkce harfler dahil). */
+  return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
+}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -504,9 +563,13 @@ function chain(spec){
     else{parts.push("l_video:"+fp+":"+tpl.fx+du);parts.push("c_scale,w_1.0,fl_relative");parts.push("e_make_transparent:"+(o.tol||25)+",co_rgb:00ff00")}
     parts.push("fl_layer_apply");
   }
-  if(tpl.grade)parts.push(tpl.grade);
+  if(o.renk&&tpl.grade)parts.push(tpl.grade);   /* renk filtresi de kapatilabilir olmali */
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
   if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  if(o.bant){
+    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+  }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
   return parts.join("/");
@@ -514,15 +577,22 @@ function chain(spec){
 /* ŞABLONSUZ: logo zorunlu değilse hiç bulut işlemi yok (sıfır kredi, anında hazır).
    Logo zorunluysa yalnız kadraj + logo basılır — şablon, efekt, müzik yok. */
 function hamChain(spec){
-  var parts=[],kp=kadraj(spec.k);
+  var parts=[],kp=kadraj(spec.k),o=flagsOf(spec);
   if(kp)parts.push(kp);
-  parts.push("l_"+lid(spec.l));
-  parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
-  parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  if(o.logo&&spec.l){
+    parts.push("l_"+lid(spec.l));
+    parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
+    parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  }
+  if(o.bant){
+    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+  }
   parts.push("q_auto");
   return parts.join("/");
 }
-function hamIslem(spec){var o=flagsOf(spec);return !!(spec.t==="ham"&&o.logo&&spec.l)}
+function hamIslem(spec){var o=flagsOf(spec);
+  return !!(spec.t==="ham"&&((o.logo&&spec.l)||bantVar(spec)))}
 function url(spec){
   var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
   if(spec.t==="ham"){
@@ -539,37 +609,39 @@ function bar(spec){
   return a;
 }
 /* QR sayfası için kısa kodlama */
-var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
+var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",renk:"g",bant:"b"};
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
   var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
   q.set("o",s);q.set("tl",String(o.tol||25));
   return q.toString();
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
   var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
 }
-return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj};
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj,bantKat:bantKat,bantVar:bantVar,txtEnc:txtEnc};
 })();
 </script>
 <script>
 (function(){
 "use strict";
-var VER="v0.7.2";
+var VER="v0.8.0";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,hizKare:1,
-  flags:{zoom:1,flash:1,dbl:1,noise:0,du:1},
+  flags:{zoom:1,flash:1,dbl:1,noise:0,du:1,renk:1,bant:1},
   kvkk:"Bu alanda çekilen videolar etkinlik boyunca saklanır ve yalnızca karekod ile size verilir.",
   otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0, logoZorunlu:0, hamKart:1,
   ust:"OBSKURA 360", bas:"Etrafında *dönen* an", renk:"", markaLogo:0, zip:0,
+  bantUstMod:"yok", bantUstTxt:"", bantAltMod:"yok", bantAltTxt:"",
+  bantRenk:"F3EDE4", bantBoy:46, bantY:92, bantFont:"Montserrat",
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -806,6 +878,27 @@ function pageBase(){
 }
 var KADRAJ={genis916:"g916",genis916d:"g916d",genis916k:"g916k"};
 function kKodu(){return KADRAJ[S.kadraj]||""}
+/* BANT YAZISI: kadraj 3:4'u 9:16'ya oturtunca alt-ustte ~240px bant kalıyor.
+   Etkinlik adı oraya basılıyor — misafirin indirdiği her videoda görünüyor.
+   "etkinlik" modu panele yazılan etkinlik adını kullanır, ayrıca yazmaya gerek yok. */
+function bantMetin(yer){
+  var mod=(yer==="ust")?S.bantUstMod:S.bantAltMod;
+  if(mod==="etkinlik")return String(S.evt||"").trim();
+  if(mod==="ozel")return String((yer==="ust")?S.bantUstTxt:S.bantAltTxt||"").trim();
+  return "";
+}
+function bantAlan(){
+  var u=bantMetin("ust"),a=bantMetin("alt");
+  if(!u&&!a)return {};
+  return {bu:u,ba:a,bc:S.bantRenk||"F3EDE4",bs:+S.bantBoy||46,by:+S.bantY||92,bf:S.bantFont||"Montserrat"};
+}
+/* Bant yazısı kırpan kadrajda videonun ÜSTÜNE biner — bant yok çünkü. */
+function bantUyari(){
+  if(!bantMetin("ust")&&!bantMetin("alt"))return "";
+  if(S.kadraj==="genis916k")return "Kadraj «bant yok — kırpar» seçili: yazı bandın değil görüntünün üstüne biner.";
+  if(S.kadraj==="standart"||S.kadraj==="genis")return "Bu kadrajda alt-üst bant oluşmuyor; yazı görüntünün üstüne biner.";
+  return "";
+}
 function logoVar(){return !!(S.logoZorunlu&&S.logoPid)}
 function activeTpls(){
   var a=E.TEMPLATES.filter(function(t){return S.aktif.indexOf(t.id)>=0});
@@ -883,15 +976,21 @@ function fillAdmin(){
   $("#fLogoZor").value=S.logoZorunlu?"1":"0";$("#fHamKart").value=(S.hamKart===0)?"0":"1";logoZorNot();
   $("#fkWarm").checked=!!S.warm;$("#fkDbl").checked=!!S.flags.dbl;$("#fkZoom").checked=!!S.flags.zoom;
   $("#fkFlash").checked=!!S.flags.flash;$("#fkNoise").checked=!!S.flags.noise;$("#fkDu").checked=!!S.flags.du;
+  $("#fkRenk").checked=!!S.flags.renk;
+  $("#fBantAltMod").value=S.bantAltMod||"yok";$("#fBantUstMod").value=S.bantUstMod||"yok";
+  $("#fBantAltTxt").value=S.bantAltTxt||"";$("#fBantUstTxt").value=S.bantUstTxt||"";
+  $("#fBantRenk").value=S.bantRenk||"F3EDE4";$("#fBantBoy").value=String(S.bantBoy||46);
+  $("#fBantY").value=S.bantY||92;
+  bantYaz();fxDurumYaz();
   buildTplList();buildMuzikList();logoInfo();fxInfo();
   fxProbe(function(ch){if(ch)fxInfo()});
   $("#verNote").textContent="OBSKURA 360 · "+VER+" · PIN 1234 · Videolar: booth360/"+evSlug()+" · İzleme sayfası: "+pageBase()+"v.html";
   try{$("#taniTxt").value=JSON.stringify({ver:VER,evt:S.evt,paket:paketOf(),mod:S.mod,kamera:S.kamera,kadraj:S.kadraj,sure:S.sure,muzikler:S.muzikler,muzikSec:S.muzikSec,tplMusic:S.tplMusic,fxHave:S.fxHave,fxMode:S.fxMode,logo:S.logoPid,aktif:S.aktif,tur:S.turSn,yuz:S.yuzSn,flags:S.flags,lastCam:S.lastCam,camLog:S.camLog,lastUrl:lastUrl,lastPage:lastPage,ua:navigator.userAgent})}catch(e){}
 }
-$("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
+$("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand();try{bantYaz()}catch(e){}});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
 $("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
-$("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save()});
+$("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save();try{bantYaz()}catch(e){}});
 function paketNot(){
   var p=paketOf(),t="";
   if(p==="editsiz")t="Misafir çekilen videoyu olduğu gibi alır. Şablon ekranı çıkmaz, karekod hemen gelir. Bulutta işlem yok — yalnız depolama/indirme.";
@@ -903,7 +1002,7 @@ function paketNot(){
 }
 $("#fPaket").addEventListener("change",function(){
   S.paket=this.value;S.mod=(this.value==="editsiz")?"editsiz":"editli"; /* eski alan uyumlu kalsın */
-  save();applyBrand();paketNot();
+  save();applyBrand();paketNot();try{fxDurumYaz();bantYaz()}catch(e){}
 });
 $("#taniKopyala").onclick=function(){var t=$("#taniTxt");t.select();try{navigator.clipboard.writeText(t.value).then(function(){$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."})}catch(e){document.execCommand("copy");$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."}};
 $("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
@@ -913,6 +1012,55 @@ $("#fSite").addEventListener("input",function(){S.siteUrl=this.value.trim();save
 $("#fOto").addEventListener("change",function(){S.otoDon=Math.max(0,Math.min(600,+this.value||0));this.value=S.otoDon;save()});
 $("#fWake").addEventListener("change",function(){S.wake=this.value==="1"?1:0;save()});
 $("#fKvkk").addEventListener("input",function(){S.kvkk=this.value;save();applyBrand()});
+/* --- BANT YAZISI paneli --- */
+function bantYaz(){
+  var a=$("#fBantAltTxtRow"),u=$("#fBantUstTxtRow");
+  if(a)a.hidden=(S.bantAltMod!=="ozel");
+  if(u)u.hidden=(S.bantUstMod!=="ozel");
+  var n=$("#bantNot");if(!n)return;
+  var alt=bantMetin("alt"),ust=bantMetin("ust");
+  var t=[];
+  if(ust)t.push("Üst bant: «"+ust+"»");
+  if(alt)t.push("Alt bant: «"+alt+"»");
+  if(!t.length)t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
+  var uy=bantUyari();if(uy)t.push("⚠ "+uy);
+  if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
+  n.textContent=t.join("  ·  ");
+  n.classList.toggle("err",!!uy);
+}
+function fxDurumYaz(){
+  var n=$("#fxDurum");if(!n)return;
+  var f=S.flags||{},ad={dbl:"¼× ağır çekim",zoom:"zoom",flash:"flaş",noise:"gren",renk:"renk filtresi"};
+  var acik=Object.keys(ad).filter(function(k){return f[k]});
+  var fxKat=(S.paket==="efektli"&&S.fxMode!=="off");
+  if(fxKat)acik.push("FX katmanı");
+  n.textContent=acik.length?("Açık: "+acik.join(", ")):"TÜM EFEKTLER KAPALI — şablon yalnız hız/kesim uygular, renge dokunmaz.";
+  n.classList.toggle("ok",!acik.length);
+}
+["fBantAltMod","fBantUstMod","fBantAltTxt","fBantUstTxt","fBantRenk","fBantBoy","fBantY"].forEach(function(id){
+  var e=$("#"+id);if(!e)return;
+  e.addEventListener(e.tagName==="SELECT"?"change":"input",function(){
+    var m={fBantAltMod:"bantAltMod",fBantUstMod:"bantUstMod",fBantAltTxt:"bantAltTxt",
+           fBantUstTxt:"bantUstTxt",fBantRenk:"bantRenk",fBantBoy:"bantBoy",fBantY:"bantY"};
+    var k=m[id];S[k]=(k==="bantBoy"||k==="bantY")?(+this.value||(k==="bantBoy"?46:92)):this.value;
+    if(k==="bantRenk")S[k]=String(this.value||"").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+    save();bantYaz();
+  });
+});
+$("#fxHepKapat").onclick=function(){
+  ["dbl","zoom","flash","noise","renk"].forEach(function(k){S.flags[k]=0});
+  S.paket="sablon";S.fxMode="off";save();
+  ["fkDbl","fkZoom","fkFlash","fkNoise","fkRenk"].forEach(function(i){var e=$("#"+i);if(e)e.checked=false});
+  var fp=$("#fPaket");if(fp)fp.value="sablon";
+  var ff=$("#fFx");if(ff)ff.value="off";
+  fxDurumYaz();bantYaz();try{paketNot()}catch(e){}
+};
+$("#fxHepAc").onclick=function(){
+  ["dbl","zoom","flash","renk"].forEach(function(k){S.flags[k]=1});S.flags.noise=0;save();
+  ["fkDbl","fkZoom","fkFlash","fkRenk"].forEach(function(i){var e=$("#"+i);if(e)e.checked=true});
+  var e=$("#fkNoise");if(e)e.checked=false;
+  fxDurumYaz();
+};
 function raporUrl(){return pageBase()+"r.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+"&g="+encodeURIComponent(galeriUrl())}
 function galeriUrl(){return pageBase()+"g.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+(S.zip?"&z=1":"")}
 $("#galeriAc").onclick=function(){window.open(galeriUrl(),"_blank")};
@@ -986,11 +1134,12 @@ function logoZorNot(){
 $("#fLogoZor").addEventListener("change",function(){S.logoZorunlu=this.value==="1"?1:0;save();logoZorNot()});
 $("#fHamKart").addEventListener("change",function(){S.hamKart=this.value==="1"?1:0;save()});
 $("#fLogoW").addEventListener("change",function(){S.logoW=this.value;save()});
-$("#fFx").addEventListener("change",function(){S.fxMode=this.value;save()});
+$("#fFx").addEventListener("change",function(){S.fxMode=this.value;save();try{fxDurumYaz()}catch(e){}});
 $("#fTol").addEventListener("change",function(){S.fxTol=Math.max(0,Math.min(100,+this.value||25));this.value=S.fxTol;save()});
-[["fkWarm","warm"],["fkDbl","dbl"],["fkZoom","zoom"],["fkFlash","flash"],["fkNoise","noise"],["fkDu","du"]].forEach(function(p){
+[["fkWarm","warm"],["fkDbl","dbl"],["fkZoom","zoom"],["fkFlash","flash"],["fkNoise","noise"],["fkRenk","renk"],["fkDu","du"]].forEach(function(p){
   $("#"+p[0]).addEventListener("change",function(){
     if(p[1]==="warm")S.warm=this.checked?1:0;else S.flags[p[1]]=this.checked?1:0;save();
+    try{fxDurumYaz();bantYaz()}catch(e){}
   });
 });
 function buildTplList(){
@@ -1268,13 +1417,15 @@ $("#upVazgec").onclick=function(){bekleyen=null;mesgul=false;recBusy=false;go("a
 var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
-  if(tid==="ham")return {c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
+  var bant=bantAlan(),bantli=!!(bant.bu||bant.ba);
+  if(tid==="ham")return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
     l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,
-    k:logoVar()?kKodu():"",              /* logo basılmıyorsa videoya hiç dokunulmaz */
-    o:Object.assign({},S.flags,{logo:1})};
-  return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
+    /* logo da bant yazısı da yoksa videoya HİÇ dokunulmaz — sıfır kredi, anında hazır */
+    k:(logoVar()||bantli)?kKodu():"",
+    o:Object.assign({},S.flags,{logo:1})},bant);
+  return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
-    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})};
+    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})},bant);
 }
 /* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
 function fxProbe(cb){
@@ -1443,7 +1594,7 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
 </script>

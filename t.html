@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#12100E">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="ikon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OBSKURA 360">
 <title>OBSKURA 360 — Saha Kontrolü</title>
 <style>
 :root{--ink:#12100E;--ink2:#1B1714;--line:rgba(243,237,228,.14);--line2:rgba(243,237,228,.3);--paper:#F6F0E6;--text:#F3EDE4;--muted:#A79688;--amber:#F2A93B;--ok:#7BC47F;--err:#E8705A;
@@ -56,7 +61,7 @@ var B360E=(function(){
 "use strict";
 function r2(x){return Math.round(x*100)/100}
 function lid(p){return String(p).replace(/\//g,":")}
-var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,tol:25};
+var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,renk:1,bant:1,tol:25};
 var POS={ne:"g_north_east,x_0.04,y_0.03",nw:"g_north_west,x_0.04,y_0.03",se:"g_south_east,x_0.04,y_0.04",sw:"g_south_west,x_0.04,y_0.04",s:"g_south,y_0.04",n:"g_north,y_0.03"};
 
 /* ---- ŞABLONLAR ----
@@ -136,6 +141,27 @@ function kadraj(k){
   if(k==="g916k")return "c_fill,w_1080,h_1920,g_center";
   return "";
 }
+/* ---- BANT YAZISI ----
+   Kadraj 3:4 kareyi 9:16'ya oturtunca alt-ustte 240'ar piksel bant kaliyor.
+   Etkinlik adi oraya basiliyor; her indirilen videoda gorunuyor.
+   Cloudinary metin katmani: l_text:<font>_<boy>_bold:<metin>,co_rgb:...
+   Metin URL-encode edilir; "," ve "/" URL yapisini bozdugu icin CIFT encode sart. */
+function txtEnc(t){
+  var e=encodeURIComponent(String(t||"").trim());
+  return e.replace(/%2C/gi,"%252C").replace(/%2F/gi,"%252F");
+}
+function bantKat(metin,spec,yon){
+  var t=txtEnc(metin);if(!t)return [];
+  var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
+  var boy=Math.max(18,Math.min(120,+spec.bs||46));
+  var renk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+  var y=Math.max(0,Math.min(400,+spec.by||92));
+  /* c_fit,w_940 → uzun kongre adi kesilmez, iki satira sarar. _center → satirlar ortalanir.
+     Canlida dogrulandi (16 Eyl 2026, Turkce harfler dahil). */
+  return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
+}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -151,9 +177,13 @@ function chain(spec){
     else{parts.push("l_video:"+fp+":"+tpl.fx+du);parts.push("c_scale,w_1.0,fl_relative");parts.push("e_make_transparent:"+(o.tol||25)+",co_rgb:00ff00")}
     parts.push("fl_layer_apply");
   }
-  if(tpl.grade)parts.push(tpl.grade);
+  if(o.renk&&tpl.grade)parts.push(tpl.grade);   /* renk filtresi de kapatilabilir olmali */
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
   if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  if(o.bant){
+    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+  }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
   return parts.join("/");
@@ -161,15 +191,22 @@ function chain(spec){
 /* ŞABLONSUZ: logo zorunlu değilse hiç bulut işlemi yok (sıfır kredi, anında hazır).
    Logo zorunluysa yalnız kadraj + logo basılır — şablon, efekt, müzik yok. */
 function hamChain(spec){
-  var parts=[],kp=kadraj(spec.k);
+  var parts=[],kp=kadraj(spec.k),o=flagsOf(spec);
   if(kp)parts.push(kp);
-  parts.push("l_"+lid(spec.l));
-  parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
-  parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  if(o.logo&&spec.l){
+    parts.push("l_"+lid(spec.l));
+    parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
+    parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  }
+  if(o.bant){
+    if(spec.bu)parts=parts.concat(bantKat(spec.bu,spec,"ust"));
+    if(spec.ba)parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+  }
   parts.push("q_auto");
   return parts.join("/");
 }
-function hamIslem(spec){var o=flagsOf(spec);return !!(spec.t==="ham"&&o.logo&&spec.l)}
+function hamIslem(spec){var o=flagsOf(spec);
+  return !!(spec.t==="ham"&&((o.logo&&spec.l)||bantVar(spec)))}
 function url(spec){
   var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
   if(spec.t==="ham"){
@@ -186,22 +223,22 @@ function bar(spec){
   return a;
 }
 /* QR sayfası için kısa kodlama */
-var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
+var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",renk:"g",bant:"b"};
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
   var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
   q.set("o",s);q.set("tl",String(o.tol||25));
   return q.toString();
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
   var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
 }
-return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj};
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj,bantKat:bantKat,bantVar:bantVar,txtEnc:txtEnc};
 })();
 </script>
 <script>
