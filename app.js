@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.9.3";
+var VER="v0.9.4";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -767,7 +767,7 @@ function logoInfo(){
   n.textContent="Logo yüklü: "+S.logoPid+ek;
 }
 $("#logoBtn").onclick=function(){$("#logoFile").click()};
-/* Yüklenen dosya GENİŞ BİR ŞERİT mi (1080×240 gibi ~4,5:1)?
+/* Yüklenen dosya GENİŞ BİR ŞERİT mi (1080×240 = 4,5:1; eşik 2,5)?
    Öyleyse bu bir köşe logosu değil, bant tasarımıdır — konumu kendimiz seçeriz.
    Burak sahada "yine aynı" dedi çünkü konum listesinde "Alt orta" kalmıştı ve
    şerit %30 genişlikte, bandın ortasında minik basıldı. Ayar aratmayalım. */
@@ -783,7 +783,7 @@ $("#logoFile").addEventListener("change",function(){
   var f=this.files&&this.files[0];this.value="";if(!f)return;
   var n=$("#logoInfo");n.className="note";n.textContent="Logo yükleniyor…";
   olcuOku(f).then(function(wh){
-    var w=wh[0],h=wh[1],oran=(w&&h)?(w/h):0, serit=(oran>=3.2);
+    var w=wh[0],h=wh[1],oran=(w&&h)?(w/h):0, serit=(oran>=2.5);
     return cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){
       S.logoPid=j.public_id;
       var bilgi="";
@@ -802,6 +802,20 @@ $("#logoFile").addEventListener("change",function(){
   }).catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
 });
 $("#logoDel").onclick=function(){S.logoPid="";save();logoInfo();logoZorNot()};
+/* Oran tahminine güvenme: tek dokunuşla da seçilsin.
+   17 Eyl — Burak 3:1'lik bir dosya yükledi, eşik tutmadı, yine köşeye bastı. */
+$("#logoBant").onclick=function(){
+  S.logoPoz="dalt";
+  if((S.bantYer||"ikisi")==="yok")S.bantYer="alt";
+  S.bantYuk=240; S.logoZorunlu=1;
+  save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+  var n=$("#logoInfo"); n.className="note ok";
+  n.textContent=(S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok")+" · ALT BANDI TAMAMEN KAPLIYOR — dosya 1080×240 değilse üst/alttan kırpılır.";
+};
+$("#logoKose").onclick=function(){
+  if(S.logoPoz==="dalt"||S.logoPoz==="dust"||S.logoPoz==="balt"||S.logoPoz==="bust")S.logoPoz="ne";
+  save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+};
 /* FX */
 function fxInfo(){
   var n=$("#fxInfo"),h=Object.keys(S.fxHave||{});
