@@ -108,6 +108,10 @@ input[type=text],input[type=number],select{width:100%;background:var(--ink);bord
 #bantOnizle .bo-icerik{flex:1;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(140deg,#4b2fc4,#7a4de0);color:rgba(255,255,255,.55);font-size:10px;letter-spacing:.1em}
 #bantOnizle .bo-ust,#bantOnizle .bo-alt{display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto}
+#bantOnizle .bo-parca{position:absolute;inset:0;display:none;align-items:center;justify-content:space-between;padding:0 3px;gap:2px}
+#bantOnizle .bo-parca img{max-height:86%;max-width:30%;object-fit:contain}
+#bantOnizle .bo-parca b{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1.15;text-align:center;overflow:hidden}
+#bantOnizle .bo-ust,#bantOnizle .bo-alt{position:relative}
 #bantOnizle .bo-img{width:100%;height:100%;object-fit:cover;display:none}
 #bantOnizle span{font-weight:700;line-height:1.1;text-align:center;padding:0 4px;
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
@@ -304,6 +308,54 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       </div>
       <div class="fld" id="fBantAltTxtRow"><div class="lbl">Alt bant yazısı</div><input type="text" id="fBantAltTxt" placeholder="Kardiyovasküler Kongresi 2026"></div>
       <div class="fld" id="fBantUstTxtRow"><div class="lbl">Üst bant yazısı</div><input type="text" id="fBantUstTxt" placeholder="YOPI EVENTS"></div>
+      <div class="lbl" style="margin-top:18px">BANT İÇERİĞİ — iki logo + 3 satır yazı</div>
+      <div class="note">Yerleşim: <b>[sol logo] &nbsp; yazı &nbsp; [sağ logo]</b>. Logolar bandın içinde dikey ortalanır, taşmaz; yazı iki logonun arasına ortalanır. Tasarımcıya ihtiyaç yok — her etkinlikte buradan kurarsın.</div>
+      <div class="fld2" style="margin-top:8px">
+        <div class="fld"><div class="lbl">SOL logo</div>
+          <div class="row" style="justify-content:flex-start;margin-top:0">
+            <button class="btn ghost mini" id="blBtn">Yükle</button>
+            <input type="file" id="blFile" accept="image/*" hidden>
+            <button class="btn ghost mini" id="blDel">Kaldır</button>
+          </div>
+          <select id="fBlW" style="margin-top:8px">
+            <option value="180">Dar (180 px)</option>
+            <option value="250">Orta (250 px)</option>
+            <option value="330">Geniş (330 px)</option>
+            <option value="420">Çok geniş (420 px)</option>
+          </select>
+          <div class="note" id="blInfo"></div>
+          <img id="blOnz" class="bgOnz" alt="" hidden></div>
+        <div class="fld"><div class="lbl">SAĞ logo</div>
+          <div class="row" style="justify-content:flex-start;margin-top:0">
+            <button class="btn ghost mini" id="brBtn">Yükle</button>
+            <input type="file" id="brFile" accept="image/*" hidden>
+            <button class="btn ghost mini" id="brDel">Kaldır</button>
+          </div>
+          <select id="fBrW" style="margin-top:8px">
+            <option value="180">Dar (180 px)</option>
+            <option value="250">Orta (250 px)</option>
+            <option value="330">Geniş (330 px)</option>
+            <option value="420">Çok geniş (420 px)</option>
+          </select>
+          <div class="note" id="brInfo"></div>
+          <img id="brOnz" class="bgOnz" alt="" hidden></div>
+      </div>
+      <div class="fld" style="margin-top:6px"><div class="lbl">1. satır</div>
+        <div class="row" style="justify-content:flex-start;margin-top:0;gap:8px">
+          <input type="text" id="fBs1" placeholder="KARDİYOVASKÜLER" style="flex:1">
+          <select id="fBc1" style="max-width:150px"></select>
+        </div></div>
+      <div class="fld"><div class="lbl">2. satır</div>
+        <div class="row" style="justify-content:flex-start;margin-top:0;gap:8px">
+          <input type="text" id="fBs2" placeholder="AKADEMİ KONGRESİ" style="flex:1">
+          <select id="fBc2" style="max-width:150px"></select>
+        </div></div>
+      <div class="fld"><div class="lbl">3. satır</div>
+        <div class="row" style="justify-content:flex-start;margin-top:0;gap:8px">
+          <input type="text" id="fBs3" placeholder="2026" style="flex:1">
+          <select id="fBc3" style="max-width:150px"></select>
+        </div></div>
+      <div class="note" id="parcaNot"></div>
       <div class="lbl" style="margin-top:16px">Bant görseli — tasarımcının hazırladığı şerit</div>
       <div class="note">Yazı yerine <b>hazır bir tasarım</b> basılır: logolar, etkinlik adı, kurumsal renk — hepsi tek şeritte. Ölçü <b>1080 × 240 piksel</b>, PNG. Görsel yüklenince o bandın yazısı otomatik devre dışı kalır ve bant kalınlığı 240'a sabitlenir.</div>
       <div class="row" style="justify-content:flex-start;margin-top:8px">
@@ -376,9 +428,9 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="note" id="bantNot"></div>
       <div class="lbl" style="margin-top:14px">Önizleme — videoda böyle görünecek</div>
       <div id="bantOnizle" aria-hidden="true">
-        <div class="bo-ust"><img class="bo-img" alt=""><span></span></div>
+        <div class="bo-ust"><img class="bo-img" alt=""><span></span><div class="bo-parca"></div></div>
         <div class="bo-icerik">görüntü</div>
-        <div class="bo-alt"><img class="bo-img" alt=""><span></span></div>
+        <div class="bo-alt"><img class="bo-img" alt=""><span></span><div class="bo-parca"></div></div>
       </div>
       <div class="note">Önizleme yaklaşıktır; yazı tipi ve renk birebir, boşluklar yakındır.</div>
     </div>
@@ -403,6 +455,12 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
         <button class="btn ghost mini" id="logoDel">Kaldır</button>
       </div>
       <div class="note" id="logoInfo"></div>
+      <div class="lbl" style="margin-top:10px">Videodaki yeri</div>
+      <div class="row" style="justify-content:flex-start;margin-top:0">
+        <button class="btn ghost mini" id="logoBant">BANDI TAMAMEN DOLDUR</button>
+        <button class="btn ghost mini" id="logoKose">KÖŞEYE BAS</button>
+      </div>
+      <div class="note">Tek parça şerit yüklediysen soldaki; normal kurum logosu yüklediysen sağdaki. Aşağıdaki «Konum» listesi de aynı işi yapar.</div>
       <div class="fld2" style="margin-top:8px">
         <div class="fld"><div class="lbl">Konum</div>
           <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option><option value="dalt">ALT BANDI TAMAMEN KAPLA — şerit tasarım</option><option value="dust">ÜST BANDI TAMAMEN KAPLA — şerit tasarım</option><option value="balt">ALT BANDIN İÇİNE ortalı</option><option value="bust">ÜST BANDIN İÇİNE ortalı</option></select><div class="note"><b>Tamamen kapla:</b> yüklediğin dosya 1080×240 bir şeritse (iki logo + etkinlik adı tek parça) bandı kenardan kenara doldurur — yanlarda boşluk kalmaz. Saydam PNG olursa bant rengi arkadan görünür.<br><b>İçine ortalı:</b> tek bir kurum logosu için — bant kalınlığına göre ortalanır, taşmaz.</div></div>

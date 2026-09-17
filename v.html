@@ -205,10 +205,69 @@ function bantGorsel(pid,spec,yon){
   return ["l_"+lid(pid),"c_fill,w_1080,h_"+h,
           "fl_layer_apply,g_"+(yon==="ust"?"north":"south")];
 }
+/* ---- BANT İÇERİĞİ (parçalı) ----
+   Burak: "iki logoyu ayrı ayrı yükleyelim, yazı üç satır yazılabilsin ki
+           iki logonun arasına girebilsin."
+   Yerleşim:  [SOL LOGO]   satır1 / satır2 / satır3   [SAĞ LOGO]
+   Logolar c_fit ile bant iç yüksekliğine sığdırılır, saydam kutuyla bandın
+   tam ölçüsüne getirilir → dikey ortalı durur, banttan taşmaz.
+   Yazı iki logonun ARASINDAKİ alana ortalanır; x kayması o alanın merkezidir. */
+function bantParcaAlan(spec){
+  var g=bantGeo(spec), H=g.h;
+  var ken=24, ara=18;
+  var sol=String(spec.bl||"").trim(), sag=String(spec.br||"").trim();
+  var lw=sol?Math.max(60,Math.min(520,+spec.blw||240)):0;
+  var rw=sag?Math.max(60,Math.min(520,+spec.brw||240)):0;
+  var solKenar=ken+(lw?lw+ara:0);
+  var sagKenar=1080-ken-(rw?rw+ara:0);
+  return {H:H,ken:ken,sol:sol,sag:sag,lw:lw,rw:rw,
+          gen:Math.max(160,sagKenar-solKenar),
+          dx:Math.round((solKenar+sagKenar)/2-540)};
+}
+function bantParcaVar(spec){
+  return !!(String(spec.bl||"").trim()||String(spec.br||"").trim()||
+            String(spec.b1||"").trim()||String(spec.b2||"").trim()||String(spec.b3||"").trim());
+}
+function bantParca(spec,yon){
+  var A=bantParcaAlan(spec), H=A.H;
+  if(!H)return [];
+  var yer=(yon==="ust")?"north":"south", out=[];
+  function logoKutu(pid,w,kose){
+    return ["l_"+lid(pid),"c_fit,w_"+w+",h_"+Math.max(20,H-24),
+            "c_pad,w_"+w+",h_"+H+",b_transparent",
+            "fl_layer_apply,g_"+yer+"_"+kose+",x_"+A.ken];
+  }
+  if(A.sol)out=out.concat(logoKutu(A.sol,A.lw,"west"));
+  if(A.sag)out=out.concat(logoKutu(A.sag,A.rw,"east"));
+  var slot=[[spec.b1,spec.c1],[spec.b2,spec.c2],[spec.b3,spec.c3]]
+    .map(function(x){return [String(x[0]||"").trim(),x[1]]})
+    .filter(function(x){return x[0]});
+  if(!slot.length)return out;
+  var m=slot.length;
+  var boy=Math.max(14,Math.min(120,+spec.bs||46));
+  var sh=Math.round(1.30*boy);
+  if(m*sh>H-10){ boy=Math.max(12,Math.floor((H-10)/(1.30*m))); sh=Math.round(1.30*boy); }
+  var harf=Math.round(0.72*boy);
+  var ust=Math.round((H-m*sh)/2);
+  var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
+  var varsayRenk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+  slot.forEach(function(x,i){
+    var t=txtEnc(x[0]); if(!t)return;
+    var renk=String(x[1]||"").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||varsayRenk;
+    /* i=0 en üstteki satır. Alt bantta y alttan, üst bantta üstten ölçülür. */
+    var y=(yon==="ust") ? (ust+i*sh+Math.round((sh-harf)/2))
+                        : (ust+(m-1-i)*sh+Math.round((sh-harf)/2));
+    out.push("l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_"+A.gen);
+    out.push("fl_layer_apply,g_"+yer+(A.dx?",x_"+A.dx:"")+",y_"+Math.max(0,y));
+  });
+  return out;
+}
+/* Öncelik: tek parça şerit görseli > parçalı içerik (iki logo + 3 satır) > düz yazı */
 function bantKatmani(spec,yon){
   if(!bantYonOk(spec,yon))return [];
   var gor=(yon==="ust")?spec.bgu:spec.bga;
   if(gor&&String(gor).trim())return bantGorsel(gor,spec,yon);
+  if(bantParcaVar(spec))return bantParca(spec,yon);
   var mt=(yon==="ust")?spec.bu:spec.ba;
   return (mt&&String(mt).trim())?bantKat(mt,spec,yon):[];
 }
@@ -246,7 +305,7 @@ function bantYonOk(spec,yon){
   if(yer==="ikisi"||yer==="yok")return true;
   return (yer==="alt"&&yon==="alt")||(yer==="ust"&&yon==="ust");
 }
-function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())||(spec.bgu&&String(spec.bgu).trim())||(spec.bga&&String(spec.bga).trim())))}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())||(spec.bgu&&String(spec.bgu).trim())||(spec.bga&&String(spec.bga).trim())||bantParcaVar(spec)))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -308,14 +367,14 @@ var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",re
 var KOK="booth360/";
 var VARSAY={lp:"ne",lw:"0.22",bc:"F3EDE4",bs:"46",bf:"Montserrat",by:"92",bp:"ikisi",bb:"0D0B0A",bo:"0",fp:"booth360/_fx"};
 function kis(k,v){ /* ortak klasör önekini at — karekod seyrek kalsın */
-  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu"||k==="bl"||k==="br")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
 }
 function uzat(k,v){
-  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu"||k==="bl"||k==="br")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
 }
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu","bl","br","blw","brw","b1","b2","b3","c1","c2","c3"].forEach(function(k){
     if(spec[k]===undefined||spec[k]===""||spec[k]===null)return;
     var v=String(spec[k]);
     if(VARSAY[k]!==undefined&&v===VARSAY[k])return;   /* varsayılanı yazma */
@@ -327,7 +386,7 @@ function encode(spec){
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu","bl","br","blw","brw","b1","b2","b3","c1","c2","c3"].forEach(function(k){
     spec[k]=q.has(k)?uzat(k,q.get(k)):VARSAY[k];
     if(spec[k]===undefined)delete spec[k];
   });
