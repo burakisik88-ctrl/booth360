@@ -102,11 +102,13 @@ input[type=text],input[type=number],select{width:100%;background:var(--ink);bord
 .note{font-size:12px;color:var(--muted);line-height:1.5;margin-top:8px;white-space:pre-line}
 .note.ok{color:#8fd694}.note.err{color:#ff8a80}
 /* aynı adla ikinci iş uyarısı — sahada gözden kaçmamalı */
+.bgOnz{display:block;width:100%;max-width:340px;margin:8px 0 2px;border:1px solid var(--line);border-radius:8px;background:#fff}
 #bantOnizle{width:150px;aspect-ratio:9/16;margin:10px 0 4px;border:1px solid var(--line);border-radius:10px;
   overflow:hidden;display:flex;flex-direction:column;background:#2a2622}
 #bantOnizle .bo-icerik{flex:1;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(140deg,#4b2fc4,#7a4de0);color:rgba(255,255,255,.55);font-size:10px;letter-spacing:.1em}
 #bantOnizle .bo-ust,#bantOnizle .bo-alt{display:flex;align-items:center;justify-content:center;overflow:hidden;flex:0 0 auto}
+#bantOnizle .bo-img{width:100%;height:100%;object-fit:cover;display:none}
 #bantOnizle span{font-weight:700;line-height:1.1;text-align:center;padding:0 4px;
   overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-word}
 .note.uyari{color:#ffd479;background:rgba(255,180,60,.10);border:1px solid rgba(255,180,60,.32);border-radius:10px;padding:10px 12px;font-size:13px}
@@ -302,6 +304,22 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       </div>
       <div class="fld" id="fBantAltTxtRow"><div class="lbl">Alt bant yazısı</div><input type="text" id="fBantAltTxt" placeholder="Kardiyovasküler Kongresi 2026"></div>
       <div class="fld" id="fBantUstTxtRow"><div class="lbl">Üst bant yazısı</div><input type="text" id="fBantUstTxt" placeholder="YOPI EVENTS"></div>
+      <div class="lbl" style="margin-top:16px">Bant görseli — tasarımcının hazırladığı şerit</div>
+      <div class="note">Yazı yerine <b>hazır bir tasarım</b> basılır: logolar, etkinlik adı, kurumsal renk — hepsi tek şeritte. Ölçü <b>1080 × 240 piksel</b>, PNG. Görsel yüklenince o bandın yazısı otomatik devre dışı kalır ve bant kalınlığı 240'a sabitlenir.</div>
+      <div class="row" style="justify-content:flex-start;margin-top:8px">
+        <button class="btn ghost mini" id="bgaBtn">ALT bant görseli yükle</button>
+        <input type="file" id="bgaFile" accept="image/*" hidden>
+        <button class="btn ghost mini" id="bgaDel">Kaldır</button>
+      </div>
+      <div class="note" id="bgaInfo"></div>
+      <img id="bgaOnz" class="bgOnz" alt="" hidden>
+      <div class="row" style="justify-content:flex-start;margin-top:8px">
+        <button class="btn ghost mini" id="bguBtn">ÜST bant görseli yükle</button>
+        <input type="file" id="bguFile" accept="image/*" hidden>
+        <button class="btn ghost mini" id="bguDel">Kaldır</button>
+      </div>
+      <div class="note" id="bguInfo"></div>
+      <img id="bguOnz" class="bgOnz" alt="" hidden>
       <div class="fld2">
         <div class="fld"><div class="lbl">Bant düzeni</div>
           <select id="fBantYer">
@@ -358,9 +376,9 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="note" id="bantNot"></div>
       <div class="lbl" style="margin-top:14px">Önizleme — videoda böyle görünecek</div>
       <div id="bantOnizle" aria-hidden="true">
-        <div class="bo-ust"><span></span></div>
+        <div class="bo-ust"><img class="bo-img" alt=""><span></span></div>
         <div class="bo-icerik">görüntü</div>
-        <div class="bo-alt"><span></span></div>
+        <div class="bo-alt"><img class="bo-img" alt=""><span></span></div>
       </div>
       <div class="note">Önizleme yaklaşıktır; yazı tipi ve renk birebir, boşluklar yakındır.</div>
     </div>
@@ -387,7 +405,7 @@ footer.tag{position:fixed;bottom:12px;left:0;right:0;text-align:center;font-fami
       <div class="note" id="logoInfo"></div>
       <div class="fld2" style="margin-top:8px">
         <div class="fld"><div class="lbl">Konum</div>
-          <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option></select></div>
+          <select id="fLogoPoz"><option value="ne">Sağ üst</option><option value="nw">Sol üst</option><option value="se">Sağ alt</option><option value="sw">Sol alt</option><option value="s">Alt orta</option><option value="n">Üst orta</option><option value="dalt">ALT BANDI TAMAMEN KAPLA — şerit tasarım</option><option value="dust">ÜST BANDI TAMAMEN KAPLA — şerit tasarım</option><option value="balt">ALT BANDIN İÇİNE ortalı</option><option value="bust">ÜST BANDIN İÇİNE ortalı</option></select><div class="note"><b>Tamamen kapla:</b> yüklediğin dosya 1080×240 bir şeritse (iki logo + etkinlik adı tek parça) bandı kenardan kenara doldurur — yanlarda boşluk kalmaz. Saydam PNG olursa bant rengi arkadan görünür.<br><b>İçine ortalı:</b> tek bir kurum logosu için — bant kalınlığına göre ortalanır, taşmaz.</div></div>
         <div class="fld"><div class="lbl">Boyut</div>
           <select id="fLogoW"><option value="0.16">Küçük</option><option value="0.22">Orta</option><option value="0.30">Büyük</option></select></div>
       </div>
@@ -670,12 +688,58 @@ function bantKat(metin,spec,yon){
   return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
           "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
 }
+/* ---- BANT GÖRSELİ ----
+   Tasarımcının hazırladığı 1080×240 şerit, bandın tamamını kaplar.
+   Yazı katmanı yerine geçer: görsel varsa o yöndeki l_text basılmaz.
+   c_fill → şerit bant yüksekliğine birebir oturur, orantı bozulmaz. */
+function bantGorsel(pid,spec,yon){
+  pid=String(pid||"").trim(); if(!pid)return [];
+  var g=bantGeo(spec), h=g.h||240;
+  return ["l_"+lid(pid),"c_fill,w_1080,h_"+h,
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")];
+}
+function bantKatmani(spec,yon){
+  if(!bantYonOk(spec,yon))return [];
+  var gor=(yon==="ust")?spec.bgu:spec.bga;
+  if(gor&&String(gor).trim())return bantGorsel(gor,spec,yon);
+  var mt=(yon==="ust")?spec.bu:spec.ba;
+  return (mt&&String(mt).trim())?bantKat(mt,spec,yon):[];
+}
+/* ---- LOGO KATMANI ----
+   Normal konumlar köşe/kenar damgasıdır: c_scale ile tuval genişliğine oranlanır.
+   "balt"/"bust" = logoyu BANDIN İÇİNE ortalar:
+     c_fit  → logo bant iç yüksekliğine ve seçilen genişliğe sığdırılır
+     c_pad  → tam bant ölçüsünde saydam kutuya ortalanır
+     g_south/g_north, y_0 → kutu bandın üstüne birebir oturur. */
+function logoKat(spec,o){
+  if(!(o.logo&&spec.l))return [];
+  var W=(+spec.lw||0.22), pid=lid(spec.l), lp=spec.lp||"ne";
+  /* "dalt"/"dust" = TEK PARÇA ŞERİT: logo dosyası bandın tamamını kaplar.
+     Burak: "sen benim yüklediğimi tek logo olarak düşün" — iki kurum logosu ve
+     etkinlik adı tek dosyada geliyor, kenarda boşluk kalmamalı. */
+  if(lp==="dalt"||lp==="dust"){
+    var gd=bantGeo(spec), yond=(lp==="dust")?"ust":"alt";
+    if(gd.h>0&&bantYonOk(spec,yond))return bantGorsel(spec.l,spec,yond);
+    lp=(lp==="dust")?"n":"s";
+  }
+  if(lp==="balt"||lp==="bust"){
+    var g=bantGeo(spec);
+    if(g.h>0&&bantYonOk(spec,lp==="bust"?"ust":"alt")){
+      var px=Math.round(W*1080), ic=Math.max(20,g.h-28);
+      return ["l_"+pid,"c_fit,w_"+px+",h_"+ic,
+              "c_pad,w_"+px+",h_"+g.h+",b_transparent",
+              "fl_layer_apply,g_"+(lp==="bust"?"north":"south")];
+    }
+    lp=(lp==="bust")?"n":"s";   /* bant yoksa kenara düşer */
+  }
+  return ["l_"+pid,"c_scale,w_"+W+",fl_relative","fl_layer_apply,"+(POS[lp]||POS.ne)];
+}
 function bantYonOk(spec,yon){
   var yer=spec.bp||"ikisi";
   if(yer==="ikisi"||yer==="yok")return true;
   return (yer==="alt"&&yon==="alt")||(yer==="ust"&&yon==="ust");
 }
-function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())))}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())||(spec.bgu&&String(spec.bgu).trim())||(spec.bga&&String(spec.bga).trim())))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -693,10 +757,10 @@ function chain(spec){
   }
   if(o.renk&&tpl.grade)parts.push(tpl.grade);   /* renk filtresi de kapatilabilir olmali */
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
-  if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  parts=parts.concat(logoKat(spec,o));
   if(o.bant){
-    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
   }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
@@ -707,14 +771,10 @@ function chain(spec){
 function hamChain(spec){
   var parts=[],kp=kadraj(spec.k,spec),o=flagsOf(spec);
   if(kp)parts.push(kp);
-  if(o.logo&&spec.l){
-    parts.push("l_"+lid(spec.l));
-    parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
-    parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
-  }
+  parts=parts.concat(logoKat(spec,o));
   if(o.bant){
-    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
   }
   parts.push("q_auto");
   return parts.join("/");
@@ -741,14 +801,14 @@ var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",re
 var KOK="booth360/";
 var VARSAY={lp:"ne",lw:"0.22",bc:"F3EDE4",bs:"46",bf:"Montserrat",by:"92",bp:"ikisi",bb:"0D0B0A",bo:"0",fp:"booth360/_fx"};
 function kis(k,v){ /* ortak klasör önekini at — karekod seyrek kalsın */
-  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
 }
 function uzat(k,v){
-  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
 }
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
     if(spec[k]===undefined||spec[k]===""||spec[k]===null)return;
     var v=String(spec[k]);
     if(VARSAY[k]!==undefined&&v===VARSAY[k])return;   /* varsayılanı yazma */
@@ -760,7 +820,7 @@ function encode(spec){
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
     spec[k]=q.has(k)?uzat(k,q.get(k)):VARSAY[k];
     if(spec[k]===undefined)delete spec[k];
   });
@@ -774,7 +834,7 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.9.1";
+var VER="v0.9.2";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -787,6 +847,7 @@ var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",ca
   bantUstMod:"yok", bantUstTxt:"", bantAltMod:"yok", bantAltTxt:"",
   bantRenk:"F3EDE4", bantBoy:46, bantY:92, bantFont:"Montserrat", ayna:0,
   bantYer:"ikisi", bantYuk:170, bantZemin:"0D0B0A", bantKaydir:0, direkt:1,
+  bantGorAlt:"", bantGorUst:"",
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -1032,13 +1093,22 @@ function bantMetin(yer){
   if(mod==="ozel")return String((yer==="ust")?S.bantUstTxt:S.bantAltTxt||"").trim();
   return "";
 }
+/* Bant görseli varsa bant kalınlığı STANDARDA (240 px) sabitlenir —
+   tasarımcıya verilen şablon 1080×240; başka kalınlıkta şerit kırpılırdı. */
+function bantGorVar(){return !!(String(S.bantGorAlt||"").trim()||String(S.bantGorUst||"").trim())}
+function bantKalinlik(){return bantGorVar()?240:(+S.bantYuk||0)}
 function bantAlan(){
   var u=bantMetin("ust"),a=bantMetin("alt");
+  var ga=String(S.bantGorAlt||"").trim(), gu=String(S.bantGorUst||"").trim();
+  /* görsel yüklü olan yönde yazı basılmaz */
+  if(ga)a=""; if(gu)u="";
+  var ort={bh:bantKalinlik(),bp:S.bantYer||"ikisi",bb:S.bantZemin||"0D0B0A"};
+  if(ga)ort.bga=ga; if(gu)ort.bgu=gu;
   /* yazı olmasa da bant DÜZENİ kadrajı belirler — geometri her zaman gider */
-  if(!u&&!a)return {bh:+S.bantYuk||0,bp:S.bantYer||"ikisi",bb:S.bantZemin||"0D0B0A"};
-  return {bu:u,ba:a,bc:S.bantRenk||"F3EDE4",bs:+S.bantBoy||46,by:+S.bantY||92,
-          bf:S.bantFont||"Montserrat",bh:+S.bantYuk||0,bp:S.bantYer||"ikisi",
-          bb:S.bantZemin||"0D0B0A",bo:+S.bantKaydir||0};
+  if(!u&&!a)return ort;
+  ort.bu=u; ort.ba=a; ort.bc=S.bantRenk||"F3EDE4"; ort.bs=+S.bantBoy||46;
+  ort.by=+S.bantY||92; ort.bf=S.bantFont||"Montserrat"; ort.bo=+S.bantKaydir||0;
+  return ort;
 }
 /* Bant yazısı kırpan kadrajda videonun ÜSTÜNE biner — bant yok çünkü. */
 function bantUyari(){
@@ -1132,6 +1202,7 @@ function fillAdmin(){
   $("#fBantYer").value=S.bantYer||"ikisi";
   $("#fBantZemin").value=S.bantZemin||"0D0B0A";
   $("#fBantYuk").value=String(S.bantYuk||170);
+  bantGorYaz();
   $("#fBantFont").value=S.bantFont||"Montserrat";
   $("#fBantKaydir").value=+S.bantKaydir||0;
   $("#fDirekt").value=S.direkt?"1":"0";
@@ -1175,7 +1246,7 @@ function tasmaUyari(metin){
   metin=String(metin||"").trim();if(!metin)return "";
   var boy=+S.bantBoy||46;
   var sigar=Math.floor(940/(0.55*boy));
-  var bandH=(S.bantYer==="yok")?9999:(+S.bantYuk||170);
+  var bandH=(S.bantYer==="yok")?9999:(bantKalinlik()||170);
   /* Satır kutusu ≈ 1.2 × punto. Tek satır banda sığmıyorsa ya da metin sarıp
      iki satır olacaksa (iki kutu) bant yetmez — ikisini de yakala. */
   var satir=1.2*boy, sarar=metin.length>sigar;
@@ -1217,7 +1288,7 @@ $("#fRenkSec").addEventListener("change",function(){
 });
 $("#fBantYer").addEventListener("change",function(){S.bantYer=this.value;save();bantYaz()});
 $("#fBantZemin").addEventListener("change",function(){S.bantZemin=this.value;save();bantYaz()});
-$("#fBantYuk").addEventListener("change",function(){S.bantYuk=+this.value||170;save();bantYaz()});
+$("#fBantYuk").addEventListener("change",function(){S.bantYuk=+this.value||170;save();bantYaz();bantGorYaz()});
 $("#fBantFont").addEventListener("change",function(){S.bantFont=this.value;save();bantYaz()});
 $("#fBantKaydir").addEventListener("change",function(){
   S.bantKaydir=Math.max(-40,Math.min(40,+this.value||0));this.value=S.bantKaydir;save();bantYaz()});
@@ -1236,7 +1307,7 @@ function fontYukle(ad){
 }
 function onizleYaz(){
   var k=$("#bantOnizle");if(!k)return;
-  var yer=S.bantYer||"ikisi", yuk=(yer==="yok")?0:(+S.bantYuk||170);
+  var yer=S.bantYer||"ikisi", yuk=(yer==="yok")?0:(bantKalinlik()||170);
   var ustEl=k.querySelector(".bo-ust"), altEl=k.querySelector(".bo-alt");
   var ustSp=ustEl.querySelector("span"), altSp=altEl.querySelector("span");
   var zemin=S.bantZemin||"0D0B0A";
@@ -1251,7 +1322,14 @@ function onizleYaz(){
   var font=S.bantFont||"Montserrat"; fontYukle(font);
   var renk="#"+String(S.bantRenk||"F3EDE4").replace(/^#/,"");
   var punto=Math.max(5,Math.round((+S.bantBoy||46)*oran));
-  [[ustSp,bantMetin("ust"),"ust"],[altSp,bantMetin("alt"),"alt"]].forEach(function(x){
+  /* bant görseli yüklüyse önizlemede şeridi göster */
+  [[ustEl,S.bantGorUst],[altEl,S.bantGorAlt]].forEach(function(x){
+    var im=x[0].querySelector(".bo-img"),pid=String(x[1]||"").trim();
+    if(!im)return;
+    if(pid){im.src=bantGorUrl(pid);im.style.display="block"}else{im.removeAttribute("src");im.style.display="none"}
+  });
+  [[ustSp,(String(S.bantGorUst||"").trim()?"":bantMetin("ust")),"ust"],
+   [altSp,(String(S.bantGorAlt||"").trim()?"":bantMetin("alt")),"alt"]].forEach(function(x){
     var el=x[0],mt=x[1],yon=x[2];
     var gorunur=(yer==="ikisi")||(yer===yon)||(yer==="yok");
     el.textContent=(gorunur&&mt)?mt:"";
@@ -1279,7 +1357,10 @@ function bantYaz(){
   else t.push("Düzen: "+({ikisi:"alt + üst",alt:"sadece alt",ust:"sadece üst"}[yer])+" · "+(+S.bantYuk||170)+" px");
   if(yer==="alt"&&ust)t.push("⚠ Düzen «sadece alt» — ÜST yazı videoda çıkmaz.");
   if(yer==="ust"&&alt)t.push("⚠ Düzen «sadece üst» — ALT yazı videoda çıkmaz.");
-  if(!bantMetin("alt")&&!bantMetin("ust"))t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
+  if(String(S.bantGorAlt||"").trim())t.push("ALT bant: tasarım görseli (yazı yerine görsel basılır)");
+  if(String(S.bantGorUst||"").trim())t.push("ÜST bant: tasarım görseli");
+  if(bantGorVar()&&(+S.bantYuk||170)!==240)t.push("⚠ Bant görseli 1080×240 standardında — kalınlık videoda 240 px olarak basılır, buradaki seçim yok sayılır.");
+  if(!bantMetin("alt")&&!bantMetin("ust")&&!bantGorVar())t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
   var uy=bantUyari();if(uy)t.push("⚠ "+uy);
   var ts=tasmaUyari(alt)||tasmaUyari(ust);if(ts)t.push("⚠ "+ts);
   if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
@@ -1458,6 +1539,59 @@ function buildMuzikList(){
     r.appendChild(nm);r.appendChild(sec);r.appendChild(tst);r.appendChild(sil);w.appendChild(r);
   });
 }
+/* ---------- BANT GÖRSELİ ----------
+   Tasarımcı 1080×240 şerit verir; şerit bandın tamamını kaplar.
+   Ölçü tutmuyorsa yüklemeyi engellemiyoruz ama net uyarıyoruz —
+   sahada gece yarısı "yükleyemedim" demesin, ne olacağını bilsin. */
+function bantGorUrl(pid){
+  return "https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/image/upload/w_540,c_limit/"+pid;
+}
+function bantGorYaz(){
+  [["bga","bantGorAlt","ALT"],["bgu","bantGorUst","ÜST"]].forEach(function(x){
+    var n=$("#"+x[0]+"Info"), im=$("#"+x[0]+"Onz"), pid=String(S[x[1]]||"").trim();
+    if(!n)return;
+    n.className="note"+(pid?" ok":"");
+    n.textContent=pid?(x[2]+" bant görseli yüklü — bu bantta yazı yerine tasarım basılır.")
+                     :(x[2]+" bant görseli yok.");
+    if(im){ if(pid){im.src=bantGorUrl(pid);im.hidden=false} else {im.removeAttribute("src");im.hidden=true} }
+  });
+}
+function bantGorYukle(dosya,anahtar,notId){
+  var n=$("#"+notId);
+  n.className="note"; n.textContent="Ölçü kontrol ediliyor…";
+  return new Promise(function(ok){
+    var im=new Image(), u=URL.createObjectURL(dosya);
+    im.onload=function(){URL.revokeObjectURL(u);ok([im.naturalWidth,im.naturalHeight])};
+    im.onerror=function(){URL.revokeObjectURL(u);ok([0,0])};
+    im.src=u;
+  }).then(function(wh){
+    var w=wh[0],h=wh[1],uy="";
+    if(w&&h){
+      if(w!==1080||h!==240){
+        var o=(w/h).toFixed(2);
+        uy=(Math.abs(w/h-4.5)<0.15)
+          ? "Ölçü "+w+"×"+h+" — standart 1080×240 değil ama oran tutuyor, ölçeklenerek basılır. "
+          : "⚠ Ölçü "+w+"×"+h+" (oran "+o+"). Standart 1080×240 (oran 4,50). Bant, şeridi doldurmak için kenarlardan kırpacak. ";
+      }
+    }
+    n.textContent=uy+"Yükleniyor…";
+    return cldUpload(dosya,"image",{folder:"booth360/_bant"}).then(function(j){
+      S[anahtar]=j.public_id; save(); bantGorYaz(); bantYaz();
+      if(uy){var nn=$("#"+notId);nn.className="note err";nn.textContent=uy+"Yüklendi: "+j.public_id}
+    });
+  }).catch(function(e){
+    n.className="note err"; n.textContent="Yüklenemedi: "+((e&&e.message)||"hata");
+  });
+}
+[["bga","bantGorAlt"],["bgu","bantGorUst"]].forEach(function(x){
+  var k=x[0],anahtar=x[1];
+  $("#"+k+"Btn").onclick=function(){$("#"+k+"File").click()};
+  $("#"+k+"File").addEventListener("change",function(){
+    var f=this.files&&this.files[0];this.value="";if(!f)return;
+    bantGorYukle(f,anahtar,k+"Info");
+  });
+  $("#"+k+"Del").onclick=function(){S[anahtar]="";save();bantGorYaz();bantYaz()};
+});
 /* logo */
 function logoInfo(){var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");n.textContent=S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok — videoya logo binmez."}
 $("#logoBtn").onclick=function(){$("#logoFile").click()};
@@ -1703,7 +1837,7 @@ $("#upVazgec").onclick=function(){bekleyen=null;mesgul=false;recBusy=false;go("a
 var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
-  var bant=bantAlan(),bantli=!!(bant.bu||bant.ba);
+  var bant=bantAlan(),bantli=!!(bant.bu||bant.ba||bant.bga||bant.bgu);
   if(tid==="ham")return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
     l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,
     /* logo da bant yazısı da yoksa videoya HİÇ dokunulmaz — sıfır kredi, anında hazır */

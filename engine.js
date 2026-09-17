@@ -143,12 +143,58 @@ function bantKat(metin,spec,yon){
   return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
           "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
 }
+/* ---- BANT GÖRSELİ ----
+   Tasarımcının hazırladığı 1080×240 şerit, bandın tamamını kaplar.
+   Yazı katmanı yerine geçer: görsel varsa o yöndeki l_text basılmaz.
+   c_fill → şerit bant yüksekliğine birebir oturur, orantı bozulmaz. */
+function bantGorsel(pid,spec,yon){
+  pid=String(pid||"").trim(); if(!pid)return [];
+  var g=bantGeo(spec), h=g.h||240;
+  return ["l_"+lid(pid),"c_fill,w_1080,h_"+h,
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")];
+}
+function bantKatmani(spec,yon){
+  if(!bantYonOk(spec,yon))return [];
+  var gor=(yon==="ust")?spec.bgu:spec.bga;
+  if(gor&&String(gor).trim())return bantGorsel(gor,spec,yon);
+  var mt=(yon==="ust")?spec.bu:spec.ba;
+  return (mt&&String(mt).trim())?bantKat(mt,spec,yon):[];
+}
+/* ---- LOGO KATMANI ----
+   Normal konumlar köşe/kenar damgasıdır: c_scale ile tuval genişliğine oranlanır.
+   "balt"/"bust" = logoyu BANDIN İÇİNE ortalar:
+     c_fit  → logo bant iç yüksekliğine ve seçilen genişliğe sığdırılır
+     c_pad  → tam bant ölçüsünde saydam kutuya ortalanır
+     g_south/g_north, y_0 → kutu bandın üstüne birebir oturur. */
+function logoKat(spec,o){
+  if(!(o.logo&&spec.l))return [];
+  var W=(+spec.lw||0.22), pid=lid(spec.l), lp=spec.lp||"ne";
+  /* "dalt"/"dust" = TEK PARÇA ŞERİT: logo dosyası bandın tamamını kaplar.
+     Burak: "sen benim yüklediğimi tek logo olarak düşün" — iki kurum logosu ve
+     etkinlik adı tek dosyada geliyor, kenarda boşluk kalmamalı. */
+  if(lp==="dalt"||lp==="dust"){
+    var gd=bantGeo(spec), yond=(lp==="dust")?"ust":"alt";
+    if(gd.h>0&&bantYonOk(spec,yond))return bantGorsel(spec.l,spec,yond);
+    lp=(lp==="dust")?"n":"s";
+  }
+  if(lp==="balt"||lp==="bust"){
+    var g=bantGeo(spec);
+    if(g.h>0&&bantYonOk(spec,lp==="bust"?"ust":"alt")){
+      var px=Math.round(W*1080), ic=Math.max(20,g.h-28);
+      return ["l_"+pid,"c_fit,w_"+px+",h_"+ic,
+              "c_pad,w_"+px+",h_"+g.h+",b_transparent",
+              "fl_layer_apply,g_"+(lp==="bust"?"north":"south")];
+    }
+    lp=(lp==="bust")?"n":"s";   /* bant yoksa kenara düşer */
+  }
+  return ["l_"+pid,"c_scale,w_"+W+",fl_relative","fl_layer_apply,"+(POS[lp]||POS.ne)];
+}
 function bantYonOk(spec,yon){
   var yer=spec.bp||"ikisi";
   if(yer==="ikisi"||yer==="yok")return true;
   return (yer==="alt"&&yon==="alt")||(yer==="ust"&&yon==="ust");
 }
-function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())))}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())||(spec.bgu&&String(spec.bgu).trim())||(spec.bga&&String(spec.bga).trim())))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -166,10 +212,10 @@ function chain(spec){
   }
   if(o.renk&&tpl.grade)parts.push(tpl.grade);   /* renk filtresi de kapatilabilir olmali */
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
-  if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  parts=parts.concat(logoKat(spec,o));
   if(o.bant){
-    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
   }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
@@ -180,14 +226,10 @@ function chain(spec){
 function hamChain(spec){
   var parts=[],kp=kadraj(spec.k,spec),o=flagsOf(spec);
   if(kp)parts.push(kp);
-  if(o.logo&&spec.l){
-    parts.push("l_"+lid(spec.l));
-    parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
-    parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
-  }
+  parts=parts.concat(logoKat(spec,o));
   if(o.bant){
-    if(spec.bu&&bantYonOk(spec,"ust"))parts=parts.concat(bantKat(spec.bu,spec,"ust"));
-    if(spec.ba&&bantYonOk(spec,"alt"))parts=parts.concat(bantKat(spec.ba,spec,"alt"));
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
   }
   parts.push("q_auto");
   return parts.join("/");
@@ -214,14 +256,14 @@ var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",re
 var KOK="booth360/";
 var VARSAY={lp:"ne",lw:"0.22",bc:"F3EDE4",bs:"46",bf:"Montserrat",by:"92",bp:"ikisi",bb:"0D0B0A",bo:"0",fp:"booth360/_fx"};
 function kis(k,v){ /* ortak klasör önekini at — karekod seyrek kalsın */
-  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
 }
 function uzat(k,v){
-  return (k==="p"||k==="l"||k==="m"||k==="fp")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
 }
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
     if(spec[k]===undefined||spec[k]===""||spec[k]===null)return;
     var v=String(spec[k]);
     if(VARSAY[k]!==undefined&&v===VARSAY[k])return;   /* varsayılanı yazma */
@@ -233,7 +275,7 @@ function encode(spec){
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo"].forEach(function(k){
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu"].forEach(function(k){
     spec[k]=q.has(k)?uzat(k,q.get(k)):VARSAY[k];
     if(spec[k]===undefined)delete spec[k];
   });
