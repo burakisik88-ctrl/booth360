@@ -136,6 +136,46 @@ with sync_playwright() as p:
     }""")
     T("normal (kare) logoda konum DEĞİŞMİYOR", r.get("poz")=="ne", r)
 
+    print("\n[7c] TEK DOKUNUŞ düğmeleri (oran tahmini tutmazsa)")
+    T("«BANDI TAMAMEN DOLDUR» düğmesi var", pg.locator("#logoBant").count()==1)
+    T("«KÖŞEYE BAS» düğmesi var", pg.locator("#logoKose").count()==1)
+    r=pg.evaluate("""()=>{B360.S.logoPoz="ne";B360.S.bantYer="yok";B360.S.bantYuk=120;B360.save();
+      document.querySelector("#logoBant").click();
+      return {poz:B360.S.logoPoz,yer:B360.S.bantYer,yuk:B360.S.bantYuk}}""")
+    T("düğme konumu 'bandı kapla' yapıyor", r.get("poz")=="dalt", r)
+    T("düğme bant düzenini ve kalınlığını hazırlıyor", r.get("yer")=="alt" and r.get("yuk")==240, r)
+    r=pg.evaluate("""()=>{document.querySelector("#logoKose").click();
+      return {poz:B360.S.logoPoz}}""")
+    T("«köşeye bas» geri alıyor", r.get("poz")=="ne", r)
+
+    print("\n[7d] Eşik 2,5 — 3:1 dosya da şerit sayılıyor (17 Eyl sahada tutmadı)")
+    r=pg.evaluate("""()=>{
+      const B=B360; B.S.logoPid=""; B.S.logoPoz="ne"; B.S.bantYer="yok"; B.save();
+      const c=document.createElement("canvas"); c.width=900; c.height=300;
+      const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,900,300);
+      return new Promise(ok=>c.toBlob(b=>{
+        const f=new File([b],"serit3.png",{type:"image/png"});
+        const dt=new DataTransfer(); dt.items.add(f);
+        const inp=document.querySelector("#logoFile");
+        inp.files=dt.files; inp.dispatchEvent(new Event("change",{bubbles:true}));
+        setTimeout(()=>ok({poz:B.S.logoPoz}),2500);
+      },"image/png"));
+    }""")
+    T("3:1 dosya şerit sayılıyor", r.get("poz")=="dalt", r)
+    r=pg.evaluate("""()=>{
+      const B=B360; B.S.logoPid=""; B.S.logoPoz="ne"; B.save();
+      const c=document.createElement("canvas"); c.width=400; c.height=200;
+      const x=c.getContext("2d"); x.fillStyle="#fff"; x.fillRect(0,0,400,200);
+      return new Promise(ok=>c.toBlob(b=>{
+        const f=new File([b],"genis.png",{type:"image/png"});
+        const dt=new DataTransfer(); dt.items.add(f);
+        const inp=document.querySelector("#logoFile");
+        inp.files=dt.files; inp.dispatchEvent(new Event("change",{bubbles:true}));
+        setTimeout(()=>ok({poz:B.S.logoPoz}),2500);
+      },"image/png"));
+    }""")
+    T("2:1 normal logo şerit SAYILMIYOR", r.get("poz")=="ne", r)
+
     print("\n[8] Sayfa hatası yok")
     T("JS hatası yok", not errs, errs)
     b.close()
