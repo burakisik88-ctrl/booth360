@@ -834,7 +834,7 @@ return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,enco
 <script>
 (function(){
 "use strict";
-var VER="v0.9.2";
+var VER="v0.9.3";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -1593,13 +1593,47 @@ function bantGorYukle(dosya,anahtar,notId){
   $("#"+k+"Del").onclick=function(){S[anahtar]="";save();bantGorYaz();bantYaz()};
 });
 /* logo */
-function logoInfo(){var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");n.textContent=S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok — videoya logo binmez."}
+function logoInfo(){
+  var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");
+  if(!S.logoPid){n.textContent="Logo yok — videoya logo binmez.";return}
+  var ek=(S.logoPoz==="dalt")?" · ALT BANDI TAMAMEN KAPLIYOR":
+         (S.logoPoz==="dust")?" · ÜST BANDI TAMAMEN KAPLIYOR":"";
+  n.textContent="Logo yüklü: "+S.logoPid+ek;
+}
 $("#logoBtn").onclick=function(){$("#logoFile").click()};
+/* Yüklenen dosya GENİŞ BİR ŞERİT mi (1080×240 gibi ~4,5:1)?
+   Öyleyse bu bir köşe logosu değil, bant tasarımıdır — konumu kendimiz seçeriz.
+   Burak sahada "yine aynı" dedi çünkü konum listesinde "Alt orta" kalmıştı ve
+   şerit %30 genişlikte, bandın ortasında minik basıldı. Ayar aratmayalım. */
+function olcuOku(dosya){
+  return new Promise(function(ok){
+    var im=new Image(), u=URL.createObjectURL(dosya);
+    im.onload=function(){URL.revokeObjectURL(u);ok([im.naturalWidth,im.naturalHeight])};
+    im.onerror=function(){URL.revokeObjectURL(u);ok([0,0])};
+    im.src=u;
+  });
+}
 $("#logoFile").addEventListener("change",function(){
   var f=this.files&&this.files[0];this.value="";if(!f)return;
   var n=$("#logoInfo");n.className="note";n.textContent="Logo yükleniyor…";
-  cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){S.logoPid=j.public_id;save();logoInfo();logoZorNot()})
-    .catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
+  olcuOku(f).then(function(wh){
+    var w=wh[0],h=wh[1],oran=(w&&h)?(w/h):0, serit=(oran>=3.2);
+    return cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){
+      S.logoPid=j.public_id;
+      var bilgi="";
+      if(serit){
+        /* şerit: bandı tamamen kaplat, bant düzenini ve kalınlığını da hazırla */
+        S.logoPoz="dalt";
+        if((S.bantYer||"ikisi")==="yok")S.bantYer="alt";
+        S.bantYuk=240;
+        S.logoZorunlu=1;
+        bilgi=" · ŞERİT TASARIM algılandı ("+w+"×"+h+", oran "+oran.toFixed(2)+
+              ") — alt bandı tamamen kaplayacak şekilde ayarlandı.";
+      }
+      save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+      if(serit){var nn=$("#logoInfo");nn.className="note ok";nn.textContent="Logo yüklü: "+j.public_id+bilgi}
+    });
+  }).catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
 });
 $("#logoDel").onclick=function(){S.logoPid="";save();logoInfo();logoZorNot()};
 /* FX */
