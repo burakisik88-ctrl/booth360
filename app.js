@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.9.0";
+var VER="v0.9.1";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -448,6 +448,49 @@ $("#fBantFont").addEventListener("change",function(){S.bantFont=this.value;save(
 $("#fBantKaydir").addEventListener("change",function(){
   S.bantKaydir=Math.max(-40,Math.min(40,+this.value||0));this.value=S.bantKaydir;save();bantYaz()});
 $("#fDirekt").addEventListener("change",function(){S.direkt=this.value==="1"?1:0;save();try{otherGoster()}catch(e){}});
+/* CANLI ÖNİZLEME: iki ayrı renk ayarı olduğu için "renk değişmiyor" karışıklığı çıktı
+   (Burak, 17 Eyl). Panelde bandın nasıl görüneceği gösterilirse tartışma bitiyor.
+   Yazı tipi Google Fonts'tan yalnız SEÇİLEN font için, istendiğinde yükleniyor. */
+var FONT_YUKLU={};
+function fontYukle(ad){
+  if(!ad||FONT_YUKLU[ad])return;FONT_YUKLU[ad]=1;
+  try{
+    var l=document.createElement("link");l.rel="stylesheet";
+    l.href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(ad).replace(/%20/g,"+")+":wght@400;700&display=swap";
+    document.head.appendChild(l);
+  }catch(e){}
+}
+function onizleYaz(){
+  var k=$("#bantOnizle");if(!k)return;
+  var yer=S.bantYer||"ikisi", yuk=(yer==="yok")?0:(+S.bantYuk||170);
+  var ustEl=k.querySelector(".bo-ust"), altEl=k.querySelector(".bo-alt");
+  var ustSp=ustEl.querySelector("span"), altSp=altEl.querySelector("span");
+  var zemin=S.bantZemin||"0D0B0A";
+  var zeminCss=(zemin==="blur")?"linear-gradient(140deg,#5a44b8,#8a63d6)":("#"+String(zemin).replace(/^#/,""));
+  /* 1920 px'lik gerçek tuvalin oranını 150 px genişlikteki kutuya indir */
+  var oran=k.clientHeight?(k.clientHeight/1920):(266/1920);
+  var pxUst=(yer==="ikisi"||yer==="ust")?Math.round(yuk*oran):0;
+  var pxAlt=(yer==="ikisi"||yer==="alt")?Math.round(yuk*oran):0;
+  ustEl.style.flexBasis=pxUst+"px"; altEl.style.flexBasis=pxAlt+"px";
+  ustEl.style.background=pxUst?zeminCss:"transparent";
+  altEl.style.background=pxAlt?zeminCss:"transparent";
+  var font=S.bantFont||"Montserrat"; fontYukle(font);
+  var renk="#"+String(S.bantRenk||"F3EDE4").replace(/^#/,"");
+  var punto=Math.max(5,Math.round((+S.bantBoy||46)*oran));
+  [[ustSp,bantMetin("ust"),"ust"],[altSp,bantMetin("alt"),"alt"]].forEach(function(x){
+    var el=x[0],mt=x[1],yon=x[2];
+    var gorunur=(yer==="ikisi")||(yer===yon)||(yer==="yok");
+    el.textContent=(gorunur&&mt)?mt:"";
+    el.style.cssText+=";font-family:'"+font+"',sans-serif;color:"+renk+";font-size:"+punto+"px";
+  });
+  /* bantsız: yazı görüntünün üstünde durur */
+  if(yer==="yok"){
+    ustEl.style.flexBasis="22px";altEl.style.flexBasis="22px";
+    ustEl.style.background="transparent";altEl.style.background="transparent";
+    ustEl.style.marginBottom="-22px";altEl.style.marginTop="-22px";
+    ustEl.style.position="relative";altEl.style.position="relative";ustEl.style.zIndex=2;altEl.style.zIndex=2;
+  }else{ustEl.style.marginBottom="";altEl.style.marginTop=""}
+}
 function bantYaz(){
   var a=$("#fBantAltTxtRow"),u=$("#fBantUstTxtRow");
   if(a)a.hidden=(S.bantAltMod!=="ozel");
@@ -468,6 +511,7 @@ function bantYaz(){
   if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
   n.textContent=t.join("  ·  ");
   n.classList.toggle("err",!!(uy||ts));
+  try{onizleYaz()}catch(e){}
 }
 function fxDurumYaz(){
   var n=$("#fxDurum");if(!n)return;
@@ -1058,6 +1102,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage,qr:qrHedef}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,onizleYaz:onizleYaz,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
