@@ -10,7 +10,7 @@
 
 import json,sys,time,threading,http.server,socketserver,pathlib,functools,datetime
 from playwright.sync_api import sync_playwright
-ROOT=pathlib.Path("/home/claude/booth360")
+ROOT=pathlib.Path(__file__).resolve().parent.parent
 PORT=8395; BASE=f"http://localhost:{PORT}/"
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass

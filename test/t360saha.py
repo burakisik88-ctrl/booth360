@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = 8364
-TINY = pathlib.Path("/tmp/tiny.mp4").read_bytes()
+TINY = pathlib.Path(__file__).resolve().parent.joinpath("tiny.mp4").read_bytes()
 BASE = f"http://localhost:{PORT}/"
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -152,7 +152,7 @@ with sync_playwright() as p:
     UP["fail"] = 0
 
     # ---- 10b) ŞABLONSUZ KART + LOGO ZORUNLULUĞU + BAŞA DÖN
-    pg.evaluate("B360.S.paket='efektli';B360.S.mod='editli';B360.S.logoPid='';B360.S.logoZorunlu=0;B360.S.hamKart=1;B360.S.kadraj='genis916d';B360.save()")
+    pg.evaluate("B360.S.paket='efektli';B360.S.mod='editli';B360.S.direkt=0;B360.S.logoPid='';B360.S.logoZorunlu=0;B360.S.hamKart=1;B360.S.kadraj='genis916d';B360.save()")
     pg.click("#startBtn"); pg.wait_for_selector("#s-style.on", timeout=25000)
     ok("şablon ekranında 'Şablonsuz' kartı var (misafir mecbur değil)",
        pg.evaluate("!!document.querySelector('#styleGrid .stcard[data-tpl=ham]')"))
@@ -167,9 +167,15 @@ with sync_playwright() as p:
     ok("şablonsuzda efekt/müzik/hız zinciri YOK",
        "e_accelerate" not in hu2 and "l_audio" not in hu2 and "fl_splice" not in hu2)
 
-    ok("kadraj: düz bant (blur yok)", "b_rgb:0D0B0A" in hu2 and "b_blurred" not in hu2, hu2.split("/")[6] if len(hu2.split("/"))>6 else "")
+    ok("bant zemini düz koyu (blur yok)", "b_rgb:0D0B0A" in hu2 and "b_blurred" not in hu2, hu2.split("/")[6] if len(hu2.split("/"))>6 else "")
+    # v0.9'dan beri çıktı geometrisini KADRAJ değil BANT DÜZENİ belirliyor (engine.kadraj → bantGeo)
+    ok("bant düzeni 'ikisi' + 170 px → içerik 1080×1580", "c_fill,w_1080,h_1580,g_center" in hu2, hu2.split("/video/upload/")[1][:40])
+    pg.evaluate("B360.S.bantYer='yok';B360.save()")
+    ok("bant düzeni 'yok' → tam ekran kırpıyor", "c_fill,w_1080,h_1920" in pg.evaluate("B360.tplUrl('ham')"))
+    pg.evaluate("B360.S.bantYer='ikisi';B360.save()")
     pg.evaluate("B360.S.kadraj='genis916k';B360.save()")
-    ok("kadraj: 'bant yok' seçilince kırpıyor", "c_fill,w_1080,h_1920" in pg.evaluate("B360.tplUrl('ham')"))
+    ok("panelin KADRAJ seçeneği çıktı geometrisini artık değiştirmiyor (bant düzeni belirliyor)",
+       "c_fill,w_1080,h_1580,g_center" in pg.evaluate("B360.tplUrl('ham')"))
     pg.evaluate("B360.S.kadraj='genis916d';B360.save()")
 
     # şablonsuz kartı gerçekten çalışıyor mu (önizleme → karekod)

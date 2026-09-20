@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "test" / "shots"; SHOTS.mkdir(parents=True, exist_ok=True)
 PORT = 8360
-TINY = pathlib.Path("/tmp/tiny.mp4").read_bytes()
+TINY = pathlib.Path(__file__).resolve().parent.joinpath("tiny.mp4").read_bytes()
 BASE = f"http://localhost:{PORT}/"
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -25,7 +25,7 @@ INIT_S = {"evt": "Deneme Gecesi", "sure": 5, "cldName": "rqhgtbvd", "cldPreset":
           "muzikler": [{"n": "track1", "pid": "booth360/_muzik/track1"}, {"n": "track2", "pid": "booth360/_muzik/track2"}],
           "muzikSec": "booth360/_muzik/track1", "tplMusic": {"kalp": "booth360/_muzik/track2"},
           "logoPid": "booth360/_logo/yopi", "fxHave": {"yildiz": 1, "kalp": 1, "konfeti": 1, "sparkle": 1},
-          "turSn": 10, "yuzSn": 0}
+          "turSn": 10, "yuzSn": 0, "direkt": 0}
 head_hits = {}
 results = []
 def ok(name, cond, extra=""):
@@ -131,7 +131,6 @@ with sync_playwright() as p:
     ok("¼× bayrağı kapandı → URL'de çift -50 yok", pg.evaluate("B360.S.flags.dbl") == 0 and ",fl_splice/e_accelerate:-50/" not in pg.evaluate("B360.setVid({pid:'x/y',ver:1,dur:15});B360.tplUrl('yildiz')"))
     pg.evaluate("document.querySelector('#fkDbl').click()")
     # kalibrasyon: 4 sn'lik deneme videosuyla
-    pg.evaluate("fetch('/../../tmp/tiny.mp4').catch(function(){})")
     pg.evaluate("(async()=>{const r=await fetch('" + BASE + "test/tiny.mp4');const b=await r.blob();B360.keepBlob(b);B360.openCal()})()")
     pg.wait_for_selector("#s-cal.on")
     pg.wait_for_function("document.querySelector('#calVid').currentTime>0.3", timeout=10000)

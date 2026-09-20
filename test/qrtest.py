@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SHOTS = ROOT / "test" / "shots"; SHOTS.mkdir(parents=True, exist_ok=True)
 PORT = 8362
-TINY = pathlib.Path("/tmp/tiny.mp4").read_bytes()
+TINY = pathlib.Path(__file__).resolve().parent.joinpath("tiny.mp4").read_bytes()
 BASE = f"http://localhost:{PORT}/"
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -22,7 +22,7 @@ threading.Thread(target=serve, daemon=True).start(); time.sleep(0.4)
 INIT = {"evt": "Deneme Gecesi", "sure": 5, "cldName": "rqhgtbvd", "cldPreset": "booth_qr",
         "muzikler": [{"n": "t1", "pid": "booth360/_muzik/track1"}], "muzikSec": "booth360/_muzik/track1",
         "logoPid": "booth360/_logo/yopi", "fxHave": {"yildiz": 1, "kalp": 1, "konfeti": 1, "sparkle": 1},
-        "turSn": 10, "yuzSn": 0}
+        "turSn": 10, "yuzSn": 0, "direkt": 0}
 
 def route(r, req):
     u = req.url
@@ -108,7 +108,10 @@ with sync_playwright() as p:
     last3 = pg.evaluate("B360.last()")
     txt3, shape3 = decode_qr(pg, "qr_mp4.png")
     ok("mp4 modu: uzun adresli karekod okunuyor", bool(txt3), f"adres {len(last3['url'])} karakter, çözülen {len(txt3)}")
-    ok("mp4 modu: adres doğru", txt3 == last3["url"], (txt3[:70] + "…") if txt3 else "ÇÖZÜLEMEDİ")
+    uzun3 = len(last3["url"]) > 480
+    beklenen3 = last3["page"] if uzun3 else last3["url"]
+    ok("mp4 modu: adres doğru (480+ karakterde sayfa moduna düşer)", txt3 == beklenen3,
+       ("%d karakter → %s modu" % (len(last3["url"]), "sayfa" if uzun3 else "mp4")))
 
     # ---- 4) gerçek etkinlik adı (Türkçe karakter) ile karekod
     pg.click("#againBtn"); pg.wait_for_selector("#s-attract.on")

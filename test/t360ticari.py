@@ -8,7 +8,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = 8366
-TINY = pathlib.Path("/tmp/tiny.mp4").read_bytes()
+TINY = pathlib.Path(__file__).resolve().parent.joinpath("tiny.mp4").read_bytes()
 BASE = f"http://localhost:{PORT}/"
 
 class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -21,7 +21,7 @@ threading.Thread(target=serve, daemon=True).start(); time.sleep(0.4)
 
 INIT = {"evt": "Ticari Test", "sure": 3, "cldName": "rqhgtbvd", "cldPreset": "booth_qr",
         "muzikler": [], "muzikSec": "", "logoPid": "", "fxHave": {"yildiz": 1, "kalp": 1, "konfeti": 1, "sparkle": 1},
-        "turSn": 10, "yuzSn": 0, "otoDon": 0, "paket": "efektli", "mod": "editli", "sayac": {}, "warm": 0}
+        "turSn": 10, "yuzSn": 0, "direkt": 0, "otoDon": 0, "paket": "efektli", "mod": "editli", "sayac": {}, "warm": 0}
 uploads = {"tags": [], "folders": []}
 
 def route(r, req):

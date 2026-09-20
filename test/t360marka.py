@@ -7,7 +7,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PORT = 8370
-TINY = pathlib.Path("/tmp/tiny.mp4").read_bytes()
+TINY = pathlib.Path(__file__).resolve().parent.joinpath("tiny.mp4").read_bytes()
 BASE = f"http://localhost:{PORT}/"
 
 class Quiet(http.server.SimpleHTTPRequestHandler):

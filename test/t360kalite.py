@@ -2,7 +2,7 @@
 """60 FPS TURU testi — aday sirasi ve secim kurali."""
 import json,sys,time,threading,http.server,socketserver,pathlib,functools
 from playwright.sync_api import sync_playwright
-ROOT=pathlib.Path("/home/claude/booth360"); PORT=8397; BASE=f"http://localhost:{PORT}/"
+ROOT=pathlib.Path(__file__).resolve().parent.parent; PORT=8397; BASE=f"http://localhost:{PORT}/"
 class Q(http.server.SimpleHTTPRequestHandler):
     def log_message(self,*a): pass
 def serve():
@@ -45,9 +45,9 @@ with sync_playwright() as p:
 
 # ---- BÖLÜM 2: MALİYET MATEMATİĞİ ----
 print("\n[4] MALIYET — dogrusal buyutme sisiriyordu, motor gercegi versin")
-import subprocess,json as J
+import os,subprocess,json as J
 js = """
-const fs=require('fs');eval(fs.readFileSync('/home/claude/booth360/src/engine.js','utf8'));
+const fs=require('fs');eval(fs.readFileSync(process.env.ENGINE,'utf8'));
 const E=B360E,O={zoom:1,flash:1,dbl:1,noise:0,du:1},TL=21.31/250;
 const out={};
 E.TEMPLATES.forEach(t=>{
@@ -58,7 +58,7 @@ E.TEMPLATES.forEach(t=>{
 });
 console.log(JSON.stringify(out));
 """
-r=J.loads(subprocess.check_output(["node","-e",js]).decode())
+r=J.loads(subprocess.check_output(["node","-e",js],env=dict(os.environ,ENGINE=str(ROOT/"src"/"engine.js"))).decode())
 for k,v in r.items():
     T(f"{k}: dogrusal {v['dogrusal']} TL, gercek {v['gercekTL']} TL — sisme var",
       v["dogrusal"]>v["gercekTL"]*2, str(v))
