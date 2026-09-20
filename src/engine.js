@@ -5,7 +5,7 @@ var B360E=(function(){
 "use strict";
 function r2(x){return Math.round(x*100)/100}
 function lid(p){return String(p).replace(/\//g,":")}
-var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,tol:25};
+var DEFO={zoom:1,flash:1,dbl:1,noise:0,du:1,logo:1,fx:1,music:1,renk:1,bant:1,tol:25};
 var POS={ne:"g_north_east,x_0.04,y_0.03",nw:"g_north_west,x_0.04,y_0.03",se:"g_south_east,x_0.04,y_0.04",sw:"g_south_west,x_0.04,y_0.04",s:"g_south,y_0.04",n:"g_north,y_0.03"};
 
 /* ---- ŞABLONLAR ----
@@ -79,12 +79,181 @@ function plan(spec){
    g916  = bulanık bant (eski varsayılan — bant çok baskın oluyordu)
    g916d = düz koyu bant, logo yeri kalır ama ekranı kesmez  ← varsayılan
    g916k = bant yok, kenarlardan kırpar (tam ekran) */
-function kadraj(k){
+/* ---- BANT GEOMETRİSİ ----
+   Bant, 9:16 tuvale oturmayan görüntünün yanında kalan koyu şerittir.
+   Ne kadar DAR bant istenirse görüntü o kadar çok kenardan kırpılır — takas budur:
+     bant 240 px → içerik 1080×1440 (3:4, en geniş kadraj)
+     bant 170 px → içerik 1080×1580
+     bant 120 px → içerik 1080×1680
+     bantsız     → içerik 1080×1920 (tam ekran, kenarlar en çok kırpılır)
+   Düzen: ikisi (üst+alt eşit) · alt (içerik yukarı yaslanır) · üst · yok.
+   Tek bantta şerit seçilen yükseklikte kalır, iki katına çıkmaz. */
+function bantGeo(spec){
+  var yer=spec.bp||"ikisi", h=Math.max(0,Math.min(400,+spec.bh||0));
+  if(yer==="yok"||!h)return {yer:"yok",h:0,ic:1920};
+  var ic=(yer==="ikisi")?(1920-2*h):(1920-h);
+  return {yer:yer,h:h,ic:Math.max(600,ic)};
+}
+function kadraj(k,spec){
+  /* yeni yol: bant ayarları verilmişse geometri onlardan kurulur */
+  if(spec&&spec.bh!==undefined&&spec.bp){
+    var g=bantGeo(spec);
+    var zemin=(spec.bb==="blur")?"b_blurred:400:15":("b_rgb:"+(String(spec.bb||"0D0B0A").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"0D0B0A"));
+    if(g.yer==="yok")return "c_fill,w_1080,h_1920,g_center";
+    var yer=(g.yer==="alt")?",g_north":((g.yer==="ust")?",g_south":"");
+    return "c_fill,w_1080,h_"+g.ic+",g_center/c_pad,w_1080,h_1920"+yer+","+zemin;
+  }
+  /* eski kurulumlar bozulmasın */
   if(k==="g916")return "c_pad,w_1080,h_1920,b_blurred:400:15";
   if(k==="g916d")return "c_pad,w_1080,h_1920,b_rgb:0D0B0A";
   if(k==="g916k")return "c_fill,w_1080,h_1920,g_center";
   return "";
 }
+/* ---- BANT YAZISI ----
+   Kadraj 3:4 kareyi 9:16'ya oturtunca alt-ustte 240'ar piksel bant kaliyor.
+   Etkinlik adi oraya basiliyor; her indirilen videoda gorunuyor.
+   Cloudinary metin katmani: l_text:<font>_<boy>_bold:<metin>,co_rgb:...
+   Metin URL-encode edilir; "," ve "/" URL yapisini bozdugu icin CIFT encode sart. */
+function txtEnc(t){
+  var e=encodeURIComponent(String(t||"").trim());
+  return e.replace(/%2C/gi,"%252C").replace(/%2F/gi,"%252F");
+}
+function bantKat(metin,spec,yon){
+  var t=txtEnc(metin);if(!t)return [];
+  var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
+  var boy=Math.max(18,Math.min(120,+spec.bs||46));
+  var renk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+  /* YAZIYI BANDA ORTALA: bant yüksekliği ve punto biliniyorsa y hesaplanır.
+     Montserrat/benzeri bold'da görünen harf yüksekliği ≈ 0.72 × punto.
+     y = (bant - harfYüksekliği) / 2 → şerit içinde ortalı durur. */
+  var g=bantGeo(spec), bandH=g.h;
+  /* tek bantta metin o şeride gider; iki bantta her ikisi de aynı yükseklikte */
+  var y;
+  if(bandH>0){
+    var harf=Math.round(0.72*boy);
+    y=Math.round((bandH-harf)/2);
+    y=Math.max(4,Math.min(bandH-harf-2,y));
+    if(!isFinite(y)||y<0)y=Math.round(bandH*0.25);
+  }else{
+    y=Math.max(0,Math.min(400,+spec.by||60));   /* bantsız: görüntünün üstünde, kenardan */
+  }
+  y=Math.max(0,y+(+spec.bo||0));                /* ince ayar: yukarı/aşağı kaydır */
+  /* c_fit,w_940 → uzun kongre adi kesilmez, iki satira sarar. _center → satirlar ortalanir.
+     Canlida dogrulandi (16 Eyl 2026, Turkce harfler dahil). */
+  return ["l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_940",
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")+",y_"+y];
+}
+/* ---- BANT GÖRSELİ ----
+   Tasarımcının hazırladığı 1080×240 şerit, bandın tamamını kaplar.
+   Yazı katmanı yerine geçer: görsel varsa o yöndeki l_text basılmaz.
+   c_fill → şerit bant yüksekliğine birebir oturur, orantı bozulmaz. */
+function bantGorsel(pid,spec,yon){
+  pid=String(pid||"").trim(); if(!pid)return [];
+  var g=bantGeo(spec), h=g.h||240;
+  return ["l_"+lid(pid),"c_fill,w_1080,h_"+h,
+          "fl_layer_apply,g_"+(yon==="ust"?"north":"south")];
+}
+/* ---- BANT İÇERİĞİ (parçalı) ----
+   Burak: "iki logoyu ayrı ayrı yükleyelim, yazı üç satır yazılabilsin ki
+           iki logonun arasına girebilsin."
+   Yerleşim:  [SOL LOGO]   satır1 / satır2 / satır3   [SAĞ LOGO]
+   Logolar c_fit ile bant iç yüksekliğine sığdırılır, saydam kutuyla bandın
+   tam ölçüsüne getirilir → dikey ortalı durur, banttan taşmaz.
+   Yazı iki logonun ARASINDAKİ alana ortalanır; x kayması o alanın merkezidir. */
+function bantParcaAlan(spec){
+  var g=bantGeo(spec), H=g.h;
+  var ken=24, ara=18;
+  var sol=String(spec.bl||"").trim(), sag=String(spec.br||"").trim();
+  var lw=sol?Math.max(60,Math.min(520,+spec.blw||240)):0;
+  var rw=sag?Math.max(60,Math.min(520,+spec.brw||240)):0;
+  var solKenar=ken+(lw?lw+ara:0);
+  var sagKenar=1080-ken-(rw?rw+ara:0);
+  return {H:H,ken:ken,sol:sol,sag:sag,lw:lw,rw:rw,
+          gen:Math.max(160,sagKenar-solKenar),
+          dx:Math.round((solKenar+sagKenar)/2-540)};
+}
+function bantParcaVar(spec){
+  return !!(String(spec.bl||"").trim()||String(spec.br||"").trim()||
+            String(spec.b1||"").trim()||String(spec.b2||"").trim()||String(spec.b3||"").trim());
+}
+function bantParca(spec,yon){
+  var A=bantParcaAlan(spec), H=A.H;
+  if(!H)return [];
+  var yer=(yon==="ust")?"north":"south", out=[];
+  function logoKutu(pid,w,kose){
+    return ["l_"+lid(pid),"c_fit,w_"+w+",h_"+Math.max(20,H-24),
+            "c_pad,w_"+w+",h_"+H+",b_transparent",
+            "fl_layer_apply,g_"+yer+"_"+kose+",x_"+A.ken];
+  }
+  if(A.sol)out=out.concat(logoKutu(A.sol,A.lw,"west"));
+  if(A.sag)out=out.concat(logoKutu(A.sag,A.rw,"east"));
+  var slot=[[spec.b1,spec.c1],[spec.b2,spec.c2],[spec.b3,spec.c3]]
+    .map(function(x){return [String(x[0]||"").trim(),x[1]]})
+    .filter(function(x){return x[0]});
+  if(!slot.length)return out;
+  var m=slot.length;
+  var boy=Math.max(14,Math.min(120,+spec.bs||46));
+  var sh=Math.round(1.30*boy);
+  if(m*sh>H-10){ boy=Math.max(12,Math.floor((H-10)/(1.30*m))); sh=Math.round(1.30*boy); }
+  var harf=Math.round(0.72*boy);
+  var ust=Math.round((H-m*sh)/2);
+  var font=(spec.bf||"Montserrat").replace(/[^A-Za-z0-9 ]/g,"").replace(/ /g,"%20");
+  var varsayRenk=String(spec.bc||"F3EDE4").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+  slot.forEach(function(x,i){
+    var t=txtEnc(x[0]); if(!t)return;
+    var renk=String(x[1]||"").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||varsayRenk;
+    /* i=0 en üstteki satır. Alt bantta y alttan, üst bantta üstten ölçülür. */
+    var y=(yon==="ust") ? (ust+i*sh+Math.round((sh-harf)/2))
+                        : (ust+(m-1-i)*sh+Math.round((sh-harf)/2));
+    out.push("l_text:"+font+"_"+boy+"_bold_center:"+t+",co_rgb:"+renk+",c_fit,w_"+A.gen);
+    out.push("fl_layer_apply,g_"+yer+(A.dx?",x_"+A.dx:"")+",y_"+Math.max(0,y));
+  });
+  return out;
+}
+/* Öncelik: tek parça şerit görseli > parçalı içerik (iki logo + 3 satır) > düz yazı */
+function bantKatmani(spec,yon){
+  if(!bantYonOk(spec,yon))return [];
+  var gor=(yon==="ust")?spec.bgu:spec.bga;
+  if(gor&&String(gor).trim())return bantGorsel(gor,spec,yon);
+  if(bantParcaVar(spec))return bantParca(spec,yon);
+  var mt=(yon==="ust")?spec.bu:spec.ba;
+  return (mt&&String(mt).trim())?bantKat(mt,spec,yon):[];
+}
+/* ---- LOGO KATMANI ----
+   Normal konumlar köşe/kenar damgasıdır: c_scale ile tuval genişliğine oranlanır.
+   "balt"/"bust" = logoyu BANDIN İÇİNE ortalar:
+     c_fit  → logo bant iç yüksekliğine ve seçilen genişliğe sığdırılır
+     c_pad  → tam bant ölçüsünde saydam kutuya ortalanır
+     g_south/g_north, y_0 → kutu bandın üstüne birebir oturur. */
+function logoKat(spec,o){
+  if(!(o.logo&&spec.l))return [];
+  var W=(+spec.lw||0.22), pid=lid(spec.l), lp=spec.lp||"ne";
+  /* "dalt"/"dust" = TEK PARÇA ŞERİT: logo dosyası bandın tamamını kaplar.
+     Burak: "sen benim yüklediğimi tek logo olarak düşün" — iki kurum logosu ve
+     etkinlik adı tek dosyada geliyor, kenarda boşluk kalmamalı. */
+  if(lp==="dalt"||lp==="dust"){
+    var gd=bantGeo(spec), yond=(lp==="dust")?"ust":"alt";
+    if(gd.h>0&&bantYonOk(spec,yond))return bantGorsel(spec.l,spec,yond);
+    lp=(lp==="dust")?"n":"s";
+  }
+  if(lp==="balt"||lp==="bust"){
+    var g=bantGeo(spec);
+    if(g.h>0&&bantYonOk(spec,lp==="bust"?"ust":"alt")){
+      var px=Math.round(W*1080), ic=Math.max(20,g.h-28);
+      return ["l_"+pid,"c_fit,w_"+px+",h_"+ic,
+              "c_pad,w_"+px+",h_"+g.h+",b_transparent",
+              "fl_layer_apply,g_"+(lp==="bust"?"north":"south")];
+    }
+    lp=(lp==="bust")?"n":"s";   /* bant yoksa kenara düşer */
+  }
+  return ["l_"+pid,"c_scale,w_"+W+",fl_relative","fl_layer_apply,"+(POS[lp]||POS.ne)];
+}
+function bantYonOk(spec,yon){
+  var yer=spec.bp||"ikisi";
+  if(yer==="ikisi"||yer==="yok")return true;
+  return (yer==="alt"&&yon==="alt")||(yer==="ust"&&yon==="ust");
+}
+function bantVar(spec){var o=flagsOf(spec);return !!(o.bant&&((spec.bu&&String(spec.bu).trim())||(spec.ba&&String(spec.ba).trim())||(spec.bgu&&String(spec.bgu).trim())||(spec.bga&&String(spec.bga).trim())||bantParcaVar(spec)))}
 function chain(spec){
   var P=plan(spec),o=P.o,tpl=P.tpl,L=lid(spec.p),parts=[];
   P.segs.forEach(function(sg,i){
@@ -93,16 +262,20 @@ function chain(spec){
     else{cs[0]="l_video:"+L+","+cs[0]+",fl_splice";parts=parts.concat(cs);parts.push("fl_layer_apply")} /* fl_splice l_video bileşeninin İÇİNDE olmalı — canlıda doğrulandı (5 Eyl 2026) */
   });
   var du=o.du?(",du_"+r2(P.out+0.5)):"";
-  var kp=kadraj(spec.k);if(kp)parts.push(kp);
+  var kp=kadraj(spec.k,spec);if(kp)parts.push(kp);
   if(o.fx&&tpl.fx&&spec.x&&spec.x!=="off"){
     var fp=lid(spec.fp||"booth360/_fx");
     if(spec.x==="alpha"){parts.push("l_video:"+fp+":"+tpl.fx+"_a"+du);parts.push("c_scale,w_1.0,fl_relative")}
     else{parts.push("l_video:"+fp+":"+tpl.fx+du);parts.push("c_scale,w_1.0,fl_relative");parts.push("e_make_transparent:"+(o.tol||25)+",co_rgb:00ff00")}
     parts.push("fl_layer_apply");
   }
-  if(tpl.grade)parts.push(tpl.grade);
+  if(o.renk&&tpl.grade)parts.push(tpl.grade);   /* renk filtresi de kapatilabilir olmali */
   if(o.noise&&tpl.noise)parts.push("e_noise:"+tpl.noise);
-  if(o.logo&&spec.l){parts.push("l_"+lid(spec.l));parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne))}
+  parts=parts.concat(logoKat(spec,o));
+  if(o.bant){
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
+  }
   if(o.music&&spec.m){parts.push("l_audio:"+lid(spec.m)+du);parts.push("fl_layer_apply")} /* ses katmanı l_audio: ile — l_video mp3'ü sessizce atıyordu */
   parts.push("q_auto");
   return parts.join("/");
@@ -110,15 +283,18 @@ function chain(spec){
 /* ŞABLONSUZ: logo zorunlu değilse hiç bulut işlemi yok (sıfır kredi, anında hazır).
    Logo zorunluysa yalnız kadraj + logo basılır — şablon, efekt, müzik yok. */
 function hamChain(spec){
-  var parts=[],kp=kadraj(spec.k);
+  var parts=[],kp=kadraj(spec.k,spec),o=flagsOf(spec);
   if(kp)parts.push(kp);
-  parts.push("l_"+lid(spec.l));
-  parts.push("c_scale,w_"+(+spec.lw||0.22)+",fl_relative");
-  parts.push("fl_layer_apply,"+(POS[spec.lp]||POS.ne));
+  parts=parts.concat(logoKat(spec,o));
+  if(o.bant){
+    parts=parts.concat(bantKatmani(spec,"ust"));
+    parts=parts.concat(bantKatmani(spec,"alt"));
+  }
   parts.push("q_auto");
   return parts.join("/");
 }
-function hamIslem(spec){var o=flagsOf(spec);return !!(spec.t==="ham"&&o.logo&&spec.l)}
+function hamIslem(spec){var o=flagsOf(spec);
+  return !!(spec.t==="ham"&&((o.logo&&spec.l)||bantVar(spec)))}
 function url(spec){
   var base="https://res.cloudinary.com/"+encodeURIComponent(spec.c||"")+"/video/upload/";
   if(spec.t==="ham"){
@@ -135,20 +311,36 @@ function bar(spec){
   return a;
 }
 /* QR sayfası için kısa kodlama */
-var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m"};
+var FK={zoom:"z",flash:"f",dbl:"d",noise:"n",du:"u",logo:"l",fx:"x",music:"m",renk:"g",bant:"b"};
+var KOK="booth360/";
+var VARSAY={lp:"ne",lw:"0.22",bc:"F3EDE4",bs:"46",bf:"Montserrat",by:"92",bp:"ikisi",bb:"0D0B0A",bo:"0",fp:"booth360/_fx"};
+function kis(k,v){ /* ortak klasör önekini at — karekod seyrek kalsın */
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu"||k==="bl"||k==="br")&&v.indexOf(KOK)===0 ? "~"+v.slice(KOK.length) : v;
+}
+function uzat(k,v){
+  return (k==="p"||k==="l"||k==="m"||k==="fp"||k==="bga"||k==="bgu"||k==="bl"||k==="br")&&v.charAt(0)==="~" ? KOK+v.slice(1) : v;
+}
 function encode(spec){
   var q=new URLSearchParams();
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(spec[k]!==undefined&&spec[k]!==""&&spec[k]!==null)q.set(k,String(spec[k]))});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu","bl","br","blw","brw","b1","b2","b3","c1","c2","c3"].forEach(function(k){
+    if(spec[k]===undefined||spec[k]===""||spec[k]===null)return;
+    var v=String(spec[k]);
+    if(VARSAY[k]!==undefined&&v===VARSAY[k])return;   /* varsayılanı yazma */
+    q.set(k,kis(k,v));
+  });
   var o=flagsOf(spec),s="";Object.keys(FK).forEach(function(k){if(o[k])s+=FK[k]});
   q.set("o",s);q.set("tl",String(o.tol||25));
   return q.toString();
 }
 function decode(str){
   var q=new URLSearchParams(String(str||"").replace(/^#/,"")),spec={};
-  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k"].forEach(function(k){if(q.has(k))spec[k]=q.get(k)});
+  ["c","p","v","t","d","f","r","l","lp","lw","m","x","fp","k","bu","ba","bc","bs","bf","by","bh","bp","bb","bo","bga","bgu","bl","br","blw","brw","b1","b2","b3","c1","c2","c3"].forEach(function(k){
+    spec[k]=q.has(k)?uzat(k,q.get(k)):VARSAY[k];
+    if(spec[k]===undefined)delete spec[k];
+  });
   var o={},s=q.get("o")||"";Object.keys(FK).forEach(function(k){o[k]=s.indexOf(FK[k])>=0?1:0});
   o.tol=+(q.get("tl")||25);spec.o=o;
   return spec;
 }
-return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj};
+return {TEMPLATES:TEMPLATES,byId:byId,plan:plan,chain:chain,url:url,bar:bar,encode:encode,decode:decode,facePick:facePick,DEFO:DEFO,lid:lid,hamIslem:hamIslem,kadraj:kadraj,bantKat:bantKat,bantVar:bantVar,txtEnc:txtEnc,bantGeo:bantGeo,bantYonOk:bantYonOk};
 })();

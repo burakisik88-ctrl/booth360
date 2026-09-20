@@ -15,3 +15,7 @@ for name, tpl in (("index.html", idx), ("v.html", v), ("g.html", g), ("t.html", 
     out = tpl.replace("/*QRLIB*/", qr.strip()).replace("/*ENGINE*/", eng.strip()).replace("/*APP*/", app.strip())
     (ROOT / name).write_text(out, encoding="utf-8")
     print(name, len(out.encode("utf-8")), "bytes")
+# PWA dosyalari oldugu gibi kopyalanir (ana ekrana ekleyince tarayici cubugu gitsin)
+for st in ("manifest.json", "ikon.svg"):
+    (ROOT / st).write_text((SRC / st).read_text(encoding="utf-8"), encoding="utf-8")
+    print(st, "kopyalandi")

@@ -1,0 +1,14 @@
+{
+  "name": "OBSKURA 360",
+  "short_name": "OBSKURA 360",
+  "description": "360 video booth — YOPI EVENTS",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#12100E",
+  "theme_color": "#12100E",
+  "icons": [
+    {"src": "ikon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}
+  ]
+}

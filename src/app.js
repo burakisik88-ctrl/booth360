@@ -1,15 +1,21 @@
 (function(){
 "use strict";
-var VER="v0.7.2";
+var VER="v0.9.5";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
   turSn:10,yuzSn:0,aktif:[],tplMusic:{},logoPid:"",logoPoz:"ne",logoW:"0.22",
   fxMode:"green",fxPath:"booth360/_fx",fxTol:25,fxHave:{},qrMod:"page",warm:1,hizKare:1,
-  flags:{zoom:1,flash:1,dbl:1,noise:0,du:1},
+  flags:{zoom:1,flash:1,dbl:1,noise:0,du:1,renk:1,bant:1},
   kvkk:"Bu alanda çekilen videolar etkinlik boyunca saklanır ve yalnızca karekod ile size verilir.",
   otoDon:75, sayac:{}, wake:1, pin:"1234", krediTl:21.31, sesli:1, deneme:0, logoZorunlu:0, hamKart:1,
   ust:"OBSKURA 360", bas:"Etrafında *dönen* an", renk:"", markaLogo:0, zip:0,
+  bantUstMod:"yok", bantUstTxt:"", bantAltMod:"yok", bantAltTxt:"",
+  bantRenk:"F3EDE4", bantBoy:46, bantY:92, bantFont:"Montserrat", ayna:0,
+  bantYer:"ikisi", bantYuk:170, bantZemin:"0D0B0A", bantKaydir:0, direkt:1,
+  bantGorAlt:"", bantGorUst:"",
+  bantSolLogo:"", bantSagLogo:"", bantSolW:250, bantSagW:250,
+  bantS1:"", bantS2:"", bantS3:"", bantC1:"", bantC2:"", bantC3:"",
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
 var S={};
 try{
@@ -108,7 +114,7 @@ function sayacArt(tip){
    Plus plan $99 / 225 kredi = $0,44 kredi → 48,44 TL kur ile 21,31 TL/kredi.
    AYNI adres ikinci kez istendiğinde Cloudinary tekrar ücret almaz — bu yüzden
    yalnız DAHA ÖNCE GÖRÜLMEMİŞ adresler sayılır. */
-var gorulenUrl={};
+var gorulenUrl={},qrHedef="";
 function tlKredi(){return +S.krediTl||21.31}
 function snTl(sn){return tlKredi()*(sn/250)}
 function maliyetEkle(u,sn){
@@ -246,6 +252,53 @@ function pageBase(){
 }
 var KADRAJ={genis916:"g916",genis916d:"g916d",genis916k:"g916k"};
 function kKodu(){return KADRAJ[S.kadraj]||""}
+/* BANT YAZISI: kadraj 3:4'u 9:16'ya oturtunca alt-ustte ~240px bant kalıyor.
+   Etkinlik adı oraya basılıyor — misafirin indirdiği her videoda görünüyor.
+   "etkinlik" modu panele yazılan etkinlik adını kullanır, ayrıca yazmaya gerek yok. */
+function bantMetin(yer){
+  var mod=(yer==="ust")?S.bantUstMod:S.bantAltMod;
+  if(mod==="etkinlik")return String(S.evt||"").trim();
+  if(mod==="ozel")return String((yer==="ust")?S.bantUstTxt:S.bantAltTxt||"").trim();
+  return "";
+}
+/* Bant görseli varsa bant kalınlığı STANDARDA (240 px) sabitlenir —
+   tasarımcıya verilen şablon 1080×240; başka kalınlıkta şerit kırpılırdı. */
+function bantGorVar(){return !!(String(S.bantGorAlt||"").trim()||String(S.bantGorUst||"").trim())}
+function bantParcaVar(){return !!(String(S.bantSolLogo||"").trim()||String(S.bantSagLogo||"").trim()||
+  String(S.bantS1||"").trim()||String(S.bantS2||"").trim()||String(S.bantS3||"").trim())}
+function bantKalinlik(){return (bantGorVar()||bantParcaVar())?240:(+S.bantYuk||0)}
+function bantAlan(){
+  var u=bantMetin("ust"),a=bantMetin("alt");
+  var ga=String(S.bantGorAlt||"").trim(), gu=String(S.bantGorUst||"").trim();
+  /* görsel yüklü olan yönde yazı basılmaz */
+  if(ga)a=""; if(gu)u="";
+  var ort={bh:bantKalinlik(),bp:S.bantYer||"ikisi",bb:S.bantZemin||"0D0B0A"};
+  if(ga)ort.bga=ga; if(gu)ort.bgu=gu;
+  /* PARÇALI İÇERİK: iki logo + 3 satır yazı (Burak, 17 Eyl) */
+  var pl=String(S.bantSolLogo||"").trim(), pr=String(S.bantSagLogo||"").trim();
+  var p1=String(S.bantS1||"").trim(), p2=String(S.bantS2||"").trim(), p3=String(S.bantS3||"").trim();
+  if(pl){ort.bl=pl; ort.blw=+S.bantSolW||250}
+  if(pr){ort.br=pr; ort.brw=+S.bantSagW||250}
+  if(p1){ort.b1=p1; if(S.bantC1)ort.c1=S.bantC1}
+  if(p2){ort.b2=p2; if(S.bantC2)ort.c2=S.bantC2}
+  if(p3){ort.b3=p3; if(S.bantC3)ort.c3=S.bantC3}
+  if(pl||pr||p1||p2||p3){
+    ort.bs=+S.bantBoy||46; ort.bf=S.bantFont||"Montserrat"; ort.bc=S.bantRenk||"F3EDE4";
+    return ort;
+  }
+  /* yazı olmasa da bant DÜZENİ kadrajı belirler — geometri her zaman gider */
+  if(!u&&!a)return ort;
+  ort.bu=u; ort.ba=a; ort.bc=S.bantRenk||"F3EDE4"; ort.bs=+S.bantBoy||46;
+  ort.by=+S.bantY||92; ort.bf=S.bantFont||"Montserrat"; ort.bo=+S.bantKaydir||0;
+  return ort;
+}
+/* Bant yazısı kırpan kadrajda videonun ÜSTÜNE biner — bant yok çünkü. */
+function bantUyari(){
+  if(!bantMetin("ust")&&!bantMetin("alt"))return "";
+  if(S.kadraj==="genis916k")return "Kadraj «bant yok — kırpar» seçili: yazı bandın değil görüntünün üstüne biner.";
+  if(S.kadraj==="standart"||S.kadraj==="genis")return "Bu kadrajda alt-üst bant oluşmuyor; yazı görüntünün üstüne biner.";
+  return "";
+}
 function logoVar(){return !!(S.logoZorunlu&&S.logoPid)}
 function activeTpls(){
   var a=E.TEMPLATES.filter(function(t){return S.aktif.indexOf(t.id)>=0});
@@ -300,11 +353,11 @@ function cldUpload(file,kind,fields,onProg){
 
 /* ---------- ADMIN ---------- */
 function fillAdmin(){
-  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fKadraj").value=S.kadraj||"genis916";$("#fPaket").value=paketOf();
+  $("#fEvt").value=S.evt;$("#fKam").value=S.kamera||"user";$("#fPaket").value=paketOf();
   paketNot();
   $("#fOto").value=S.otoDon;$("#fWake").value=S.wake?"1":"0";$("#fKvkk").value=S.kvkk||"";
   $("#fSesli").value=S.sesli?"1":"0";$("#fPin").value=PINK();$("#fYonerge").value=S.yonerge||"";
-  $("#fUst").value=S.ust||"";$("#fBas").value=S.bas||"";$("#fRenk").value=S.renk||"";
+  $("#fUst").value=S.ust||"";$("#fBas").value=S.bas||"";$("#fRenk").value=S.renk||"";markaRenkYaz();
   $("#fMarkaLogo").value=S.markaLogo?"1":"0";$("#fkZip").checked=!!S.zip;markaNot();
   $("#fkDeneme").checked=!!S.deneme;denemeNot();
   $("#fKredi").value=tlKredi();
@@ -323,15 +376,28 @@ function fillAdmin(){
   $("#fLogoZor").value=S.logoZorunlu?"1":"0";$("#fHamKart").value=(S.hamKart===0)?"0":"1";logoZorNot();
   $("#fkWarm").checked=!!S.warm;$("#fkDbl").checked=!!S.flags.dbl;$("#fkZoom").checked=!!S.flags.zoom;
   $("#fkFlash").checked=!!S.flags.flash;$("#fkNoise").checked=!!S.flags.noise;$("#fkDu").checked=!!S.flags.du;
+  $("#fkRenk").checked=!!S.flags.renk;
+  $("#fBantAltMod").value=S.bantAltMod||"yok";$("#fBantUstMod").value=S.bantUstMod||"yok";
+  $("#fBantAltTxt").value=S.bantAltTxt||"";$("#fBantUstTxt").value=S.bantUstTxt||"";
+  bantRenkYaz();$("#fBantBoy").value=String(S.bantBoy||46);
+  $("#fAyna").value=S.ayna?"1":"0";
+  $("#fBantYer").value=S.bantYer||"ikisi";
+  $("#fBantZemin").value=S.bantZemin||"0D0B0A";
+  $("#fBantYuk").value=String(S.bantYuk||170);
+  bantGorYaz(); parcaYaz();
+  $("#fBantFont").value=S.bantFont||"Montserrat";
+  $("#fBantKaydir").value=+S.bantKaydir||0;
+  $("#fDirekt").value=S.direkt?"1":"0";
+  markaRenkYaz();
+  bantYaz();fxDurumYaz();
   buildTplList();buildMuzikList();logoInfo();fxInfo();
   fxProbe(function(ch){if(ch)fxInfo()});
   $("#verNote").textContent="OBSKURA 360 · "+VER+" · PIN 1234 · Videolar: booth360/"+evSlug()+" · İzleme sayfası: "+pageBase()+"v.html";
   try{$("#taniTxt").value=JSON.stringify({ver:VER,evt:S.evt,paket:paketOf(),mod:S.mod,kamera:S.kamera,kadraj:S.kadraj,sure:S.sure,muzikler:S.muzikler,muzikSec:S.muzikSec,tplMusic:S.tplMusic,fxHave:S.fxHave,fxMode:S.fxMode,logo:S.logoPid,aktif:S.aktif,tur:S.turSn,yuz:S.yuzSn,flags:S.flags,lastCam:S.lastCam,camLog:S.camLog,lastUrl:lastUrl,lastPage:lastPage,ua:navigator.userAgent})}catch(e){}
 }
-$("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand()});
+$("#fEvt").addEventListener("input",function(){S.evt=this.value;save();applyBrand();try{bantYaz()}catch(e){}});
 $("#fSure").addEventListener("change",function(){S.sure=Math.max(5,Math.min(30,+this.value||15));save()});
 $("#fKam").addEventListener("change",function(){S.kamera=this.value;save()});
-$("#fKadraj").addEventListener("change",function(){S.kadraj=this.value;save()});
 function paketNot(){
   var p=paketOf(),t="";
   if(p==="editsiz")t="Misafir çekilen videoyu olduğu gibi alır. Şablon ekranı çıkmaz, karekod hemen gelir. Bulutta işlem yok — yalnız depolama/indirme.";
@@ -343,7 +409,7 @@ function paketNot(){
 }
 $("#fPaket").addEventListener("change",function(){
   S.paket=this.value;S.mod=(this.value==="editsiz")?"editsiz":"editli"; /* eski alan uyumlu kalsın */
-  save();applyBrand();paketNot();
+  save();applyBrand();paketNot();try{fxDurumYaz();bantYaz()}catch(e){}
 });
 $("#taniKopyala").onclick=function(){var t=$("#taniTxt");t.select();try{navigator.clipboard.writeText(t.value).then(function(){$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."})}catch(e){document.execCommand("copy");$("#taniNot").textContent="Kopyalandı — sohbete yapıştır."}};
 $("#fCld").addEventListener("input",function(){S.cldName=this.value.trim();save()});
@@ -353,6 +419,192 @@ $("#fSite").addEventListener("input",function(){S.siteUrl=this.value.trim();save
 $("#fOto").addEventListener("change",function(){S.otoDon=Math.max(0,Math.min(600,+this.value||0));this.value=S.otoDon;save()});
 $("#fWake").addEventListener("change",function(){S.wake=this.value==="1"?1:0;save()});
 $("#fKvkk").addEventListener("input",function(){S.kvkk=this.value;save();applyBrand()});
+/* --- BANT YAZISI paneli --- */
+/* BANT TAŞMASI: metin 940 px'e sığmazsa Cloudinary iki satıra sarıyor; iki satır
+   240 px'lik banda sığmıyor, görüntünün üstüne taşıyor. Canlıda ölçüldü (16 Eyl 2026):
+   "Kardiyovasküler Kongresi 2026" → 58 px'te tek satır, 70 px'te 140 px olup 12 px taşıyor.
+   Montserrat bold ortalama karakter genişliği ≈ 0.55 × punto. */
+function tasmaUyari(metin){
+  metin=String(metin||"").trim();if(!metin)return "";
+  var boy=+S.bantBoy||46;
+  var sigar=Math.floor(940/(0.55*boy));
+  var bandH=(S.bantYer==="yok")?9999:(bantKalinlik()||170);
+  /* Satır kutusu ≈ 1.2 × punto. Tek satır banda sığmıyorsa ya da metin sarıp
+     iki satır olacaksa (iki kutu) bant yetmez — ikisini de yakala. */
+  var satir=1.2*boy, sarar=metin.length>sigar;
+  var gerek=sarar?(2*satir):satir;
+  if(gerek>bandH-8)
+    return "«"+metin+"» bu punto"+(sarar?" ve uzunlukta":"")+" "+bandH+" px banda sığmaz — "+
+           (sarar?"yazıyı kısalt, ":"")+"puntoyu küçült ya da bandı kalınlaştır.";
+  if(metin.length<=sigar)return "";
+  var adlar={36:"Küçük",46:"Orta",58:"Büyük",70:"Çok büyük"};
+  var oner=[36,46,58,70].filter(function(b){return metin.length<=Math.floor(940/(0.55*b))}).pop();
+  return "«"+metin+"» bu yazı boyunda banda sığmaz — iki satıra sarar ve görüntünün üstüne taşar. "+
+         (oner?("Yazı boyunu «"+adlar[oner]+"» yap."):"Yazıyı kısalt.");
+}
+/* Yazı rengi: saha ekibi renk kodu yazmak istemiyor — isimli renkler, "özel" seçilirse kod kutusu açılır. */
+var BANT_RENKLER=["F3EDE4","FFFFFF","12100E","F2A93B","D4D4D4","E5484D","2B6CB0","3FA45B","E86FA0"];
+function bantRenkYaz(){
+  var k=(S.bantRenk||"F3EDE4").toUpperCase(), sec=$("#fBantRenkSec"), kutu=$("#fBantRenk");
+  if(!sec||!kutu)return;
+  var hazir=BANT_RENKLER.indexOf(k)>=0;
+  sec.value=hazir?k:"ozel";
+  kutu.hidden=hazir; kutu.value=k;
+}
+$("#fBantRenkSec").addEventListener("change",function(){
+  if(this.value==="ozel"){$("#fBantRenk").hidden=false;$("#fBantRenk").focus()}
+  else{S.bantRenk=this.value;$("#fBantRenk").hidden=true;$("#fBantRenk").value=this.value;save();bantYaz()}
+});
+$("#fAyna").addEventListener("change",function(){S.ayna=this.value==="1"?1:0;save()});
+/* Marka vurgu rengi de palet — kod yazmak zorunda kalınmasın (Burak, 16 Eyl). */
+var MARKA_RENKLER=["","#F2A93B","#D4D4D4","#F3EDE4","#E5484D","#2B6CB0","#3FA45B","#E86FA0","#9B6BDF"];
+function markaRenkYaz(){
+  var sec=$("#fRenkSec"),kutu=$("#fRenk");if(!sec||!kutu)return;
+  var k=String(S.renk||"");
+  var hazir=MARKA_RENKLER.indexOf(k)>=0;
+  sec.value=hazir?k:"ozel"; kutu.hidden=hazir; kutu.value=k;
+}
+$("#fRenkSec").addEventListener("change",function(){
+  if(this.value==="ozel"){$("#fRenk").hidden=false;$("#fRenk").focus();return}
+  S.renk=this.value;$("#fRenk").hidden=true;$("#fRenk").value=this.value;save();applyBrand();markaNot();
+});
+$("#fBantYer").addEventListener("change",function(){S.bantYer=this.value;save();bantYaz()});
+$("#fBantZemin").addEventListener("change",function(){S.bantZemin=this.value;save();bantYaz()});
+$("#fBantYuk").addEventListener("change",function(){S.bantYuk=+this.value||170;save();bantYaz();bantGorYaz()});
+$("#fBantFont").addEventListener("change",function(){S.bantFont=this.value;save();bantYaz()});
+$("#fBantKaydir").addEventListener("change",function(){
+  S.bantKaydir=Math.max(-40,Math.min(40,+this.value||0));this.value=S.bantKaydir;save();bantYaz()});
+$("#fDirekt").addEventListener("change",function(){S.direkt=this.value==="1"?1:0;save();try{otherGoster()}catch(e){}});
+/* CANLI ÖNİZLEME: iki ayrı renk ayarı olduğu için "renk değişmiyor" karışıklığı çıktı
+   (Burak, 17 Eyl). Panelde bandın nasıl görüneceği gösterilirse tartışma bitiyor.
+   Yazı tipi Google Fonts'tan yalnız SEÇİLEN font için, istendiğinde yükleniyor. */
+var FONT_YUKLU={};
+function fontYukle(ad){
+  if(!ad||FONT_YUKLU[ad])return;FONT_YUKLU[ad]=1;
+  try{
+    var l=document.createElement("link");l.rel="stylesheet";
+    l.href="https://fonts.googleapis.com/css2?family="+encodeURIComponent(ad).replace(/%20/g,"+")+":wght@400;700&display=swap";
+    document.head.appendChild(l);
+  }catch(e){}
+}
+function onizleYaz(){
+  var k=$("#bantOnizle");if(!k)return;
+  var yer=S.bantYer||"ikisi", yuk=(yer==="yok")?0:(bantKalinlik()||170);
+  var ustEl=k.querySelector(".bo-ust"), altEl=k.querySelector(".bo-alt");
+  var ustSp=ustEl.querySelector("span"), altSp=altEl.querySelector("span");
+  var zemin=S.bantZemin||"0D0B0A";
+  var zeminCss=(zemin==="blur")?"linear-gradient(140deg,#5a44b8,#8a63d6)":("#"+String(zemin).replace(/^#/,""));
+  /* 1920 px'lik gerçek tuvalin oranını 150 px genişlikteki kutuya indir */
+  var oran=k.clientHeight?(k.clientHeight/1920):(266/1920);
+  var pxUst=(yer==="ikisi"||yer==="ust")?Math.round(yuk*oran):0;
+  var pxAlt=(yer==="ikisi"||yer==="alt")?Math.round(yuk*oran):0;
+  ustEl.style.flexBasis=pxUst+"px"; altEl.style.flexBasis=pxAlt+"px";
+  ustEl.style.background=pxUst?zeminCss:"transparent";
+  altEl.style.background=pxAlt?zeminCss:"transparent";
+  var font=S.bantFont||"Montserrat"; fontYukle(font);
+  var renk="#"+String(S.bantRenk||"F3EDE4").replace(/^#/,"");
+  var punto=Math.max(5,Math.round((+S.bantBoy||46)*oran));
+  /* PARÇALI önizleme: sol logo | 3 satır | sağ logo */
+  var parcaVar=bantParcaVar();
+  [[ustEl,"ust"],[altEl,"alt"]].forEach(function(x){
+    var kut=x[0].querySelector(".bo-parca"); if(!kut)return;
+    var goster=parcaVar&&((yer==="ikisi")||(yer===x[1]));
+    if(!goster){kut.style.display="none";kut.innerHTML="";return}
+    kut.style.display="flex"; kut.innerHTML="";
+    var solPid=String(S.bantSolLogo||"").trim(), sagPid=String(S.bantSagLogo||"").trim();
+    if(solPid){var a=document.createElement("img");a.src=bantGorUrl(solPid);kut.appendChild(a)}
+    var b=document.createElement("b"); 
+    var punto=Math.max(3,Math.round((+S.bantBoy||46)*oran));
+    b.style.cssText="font-family:'"+(S.bantFont||"Montserrat")+"',sans-serif;font-size:"+punto+"px";
+    ["1","2","3"].forEach(function(i){
+      var t=String(S["bantS"+i]||"").trim(); if(!t)return;
+      var d=document.createElement("i");
+      d.style.cssText="font-style:normal;color:#"+String(S["bantC"+i]||S.bantRenk||"F3EDE4").replace(/^#/,"");
+      d.textContent=t; b.appendChild(d);
+    });
+    kut.appendChild(b);
+    if(sagPid){var c=document.createElement("img");c.src=bantGorUrl(sagPid);kut.appendChild(c)}
+  });
+  /* bant görseli yüklüyse önizlemede şeridi göster */
+  [[ustEl,S.bantGorUst],[altEl,S.bantGorAlt]].forEach(function(x){
+    var im=x[0].querySelector(".bo-img"),pid=String(x[1]||"").trim();
+    if(!im)return;
+    if(pid){im.src=bantGorUrl(pid);im.style.display="block"}else{im.removeAttribute("src");im.style.display="none"}
+  });
+  [[ustSp,((String(S.bantGorUst||"").trim()||parcaVar)?"":bantMetin("ust")),"ust"],
+   [altSp,((String(S.bantGorAlt||"").trim()||parcaVar)?"":bantMetin("alt")),"alt"]].forEach(function(x){
+    var el=x[0],mt=x[1],yon=x[2];
+    var gorunur=(yer==="ikisi")||(yer===yon)||(yer==="yok");
+    el.textContent=(gorunur&&mt)?mt:"";
+    el.style.cssText+=";font-family:'"+font+"',sans-serif;color:"+renk+";font-size:"+punto+"px";
+  });
+  /* bantsız: yazı görüntünün üstünde durur */
+  if(yer==="yok"){
+    ustEl.style.flexBasis="22px";altEl.style.flexBasis="22px";
+    ustEl.style.background="transparent";altEl.style.background="transparent";
+    ustEl.style.marginBottom="-22px";altEl.style.marginTop="-22px";
+    ustEl.style.position="relative";altEl.style.position="relative";ustEl.style.zIndex=2;altEl.style.zIndex=2;
+  }else{ustEl.style.marginBottom="";altEl.style.marginTop=""}
+}
+function bantYaz(){
+  var a=$("#fBantAltTxtRow"),u=$("#fBantUstTxtRow");
+  if(a)a.hidden=(S.bantAltMod!=="ozel");
+  if(u)u.hidden=(S.bantUstMod!=="ozel");
+  var n=$("#bantNot");if(!n)return;
+  var alt=bantMetin("alt"),ust=bantMetin("ust");
+  var t=[];
+  if(ust)t.push("Üst bant: «"+ust+"»");
+  if(alt)t.push("Alt bant: «"+alt+"»");
+  var yer=S.bantYer||"ikisi";
+  if(yer==="yok")t.push("Bantsız (tam ekran) — yazı görüntünün üstüne biner");
+  else t.push("Düzen: "+({ikisi:"alt + üst",alt:"sadece alt",ust:"sadece üst"}[yer])+" · "+(+S.bantYuk||170)+" px");
+  if(yer==="alt"&&ust)t.push("⚠ Düzen «sadece alt» — ÜST yazı videoda çıkmaz.");
+  if(yer==="ust"&&alt)t.push("⚠ Düzen «sadece üst» — ALT yazı videoda çıkmaz.");
+  if(bantParcaVar())t.push("Bant içeriği: iki logo + satır yazı (düz bant yazısının yerine geçer)");
+  if(String(S.bantGorAlt||"").trim())t.push("ALT bant: tasarım görseli (yazı yerine görsel basılır)");
+  if(String(S.bantGorUst||"").trim())t.push("ÜST bant: tasarım görseli");
+  if(bantGorVar()&&(+S.bantYuk||170)!==240)t.push("⚠ Bant görseli 1080×240 standardında — kalınlık videoda 240 px olarak basılır, buradaki seçim yok sayılır.");
+  if(!bantMetin("alt")&&!bantMetin("ust")&&!bantGorVar()&&!bantParcaVar())t.push("Bant yazısı kapalı — videoda yazı çıkmaz.");
+  var uy=bantUyari();if(uy)t.push("⚠ "+uy);
+  var ts=tasmaUyari(alt)||tasmaUyari(ust);if(ts)t.push("⚠ "+ts);
+  if((ust||alt)&&S.paket==="editsiz")t.push("Not: şablonsuz teslimde bant yazısı bulut işlemi gerektirir — misafir başına ≈0,1 TL. Yazı kapalıyken ham video hiç işlenmez.");
+  n.textContent=t.join("  ·  ");
+  n.classList.toggle("err",!!(uy||ts));
+  try{onizleYaz()}catch(e){}
+}
+function fxDurumYaz(){
+  var n=$("#fxDurum");if(!n)return;
+  var f=S.flags||{},ad={dbl:"¼× ağır çekim",zoom:"zoom",flash:"flaş",noise:"gren",renk:"renk filtresi"};
+  var acik=Object.keys(ad).filter(function(k){return f[k]});
+  var fxKat=(S.paket==="efektli"&&S.fxMode!=="off");
+  if(fxKat)acik.push("FX katmanı");
+  n.textContent=acik.length?("Açık: "+acik.join(", ")):"TÜM EFEKTLER KAPALI — şablon yalnız hız/kesim uygular, renge dokunmaz.";
+  n.classList.toggle("ok",!acik.length);
+}
+["fBantAltMod","fBantUstMod","fBantAltTxt","fBantUstTxt","fBantRenk","fBantBoy"].forEach(function(id){
+  var e=$("#"+id);if(!e)return;
+  e.addEventListener(e.tagName==="SELECT"?"change":"input",function(){
+    var m={fBantAltMod:"bantAltMod",fBantUstMod:"bantUstMod",fBantAltTxt:"bantAltTxt",
+           fBantUstTxt:"bantUstTxt",fBantRenk:"bantRenk",fBantBoy:"bantBoy"};
+    var k=m[id];S[k]=(k==="bantBoy")?(+this.value||46):this.value;
+    if(k==="bantRenk")S[k]=String(this.value||"").replace(/^#/,"").replace(/[^0-9A-Fa-f]/g,"")||"F3EDE4";
+    save();bantYaz();if(k==="bantRenk")try{var sc=$("#fBantRenkSec");sc.value=BANT_RENKLER.indexOf(S.bantRenk.toUpperCase())>=0?S.bantRenk.toUpperCase():"ozel"}catch(e){}
+  });
+});
+$("#fxHepKapat").onclick=function(){
+  ["dbl","zoom","flash","noise","renk"].forEach(function(k){S.flags[k]=0});
+  S.paket="sablon";S.fxMode="off";save();
+  ["fkDbl","fkZoom","fkFlash","fkNoise","fkRenk"].forEach(function(i){var e=$("#"+i);if(e)e.checked=false});
+  var fp=$("#fPaket");if(fp)fp.value="sablon";
+  var ff=$("#fFx");if(ff)ff.value="off";
+  fxDurumYaz();bantYaz();try{paketNot()}catch(e){}
+};
+$("#fxHepAc").onclick=function(){
+  ["dbl","zoom","flash","renk"].forEach(function(k){S.flags[k]=1});S.flags.noise=0;save();
+  ["fkDbl","fkZoom","fkFlash","fkRenk"].forEach(function(i){var e=$("#"+i);if(e)e.checked=true});
+  var e=$("#fkNoise");if(e)e.checked=false;
+  fxDurumYaz();
+};
 function raporUrl(){return pageBase()+"r.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+"&g="+encodeURIComponent(galeriUrl())}
 function galeriUrl(){return pageBase()+"g.html#c="+encodeURIComponent(S.cldName)+"&t="+encodeURIComponent(evSlug()+"-360")+"&e="+encodeURIComponent(S.evt||"Etkinlik")+(S.zip?"&z=1":"")}
 $("#galeriAc").onclick=function(){window.open(galeriUrl(),"_blank")};
@@ -426,11 +678,12 @@ function logoZorNot(){
 $("#fLogoZor").addEventListener("change",function(){S.logoZorunlu=this.value==="1"?1:0;save();logoZorNot()});
 $("#fHamKart").addEventListener("change",function(){S.hamKart=this.value==="1"?1:0;save()});
 $("#fLogoW").addEventListener("change",function(){S.logoW=this.value;save()});
-$("#fFx").addEventListener("change",function(){S.fxMode=this.value;save()});
+$("#fFx").addEventListener("change",function(){S.fxMode=this.value;save();try{fxDurumYaz()}catch(e){}});
 $("#fTol").addEventListener("change",function(){S.fxTol=Math.max(0,Math.min(100,+this.value||25));this.value=S.fxTol;save()});
-[["fkWarm","warm"],["fkDbl","dbl"],["fkZoom","zoom"],["fkFlash","flash"],["fkNoise","noise"],["fkDu","du"]].forEach(function(p){
+[["fkWarm","warm"],["fkDbl","dbl"],["fkZoom","zoom"],["fkFlash","flash"],["fkNoise","noise"],["fkRenk","renk"],["fkDu","du"]].forEach(function(p){
   $("#"+p[0]).addEventListener("change",function(){
     if(p[1]==="warm")S.warm=this.checked?1:0;else S.flags[p[1]]=this.checked?1:0;save();
+    try{fxDurumYaz();bantYaz()}catch(e){}
   });
 });
 function buildTplList(){
@@ -438,12 +691,13 @@ function buildTplList(){
   E.TEMPLATES.forEach(function(t){
     var r=document.createElement("div");r.className="mrow";
     var ck=document.createElement("input");ck.type="checkbox";ck.style.cssText="width:22px;height:22px;accent-color:var(--amber)";
-    ck.checked=S.aktif.length?S.aktif.indexOf(t.id)>=0:true;
+    ck.checked=S.aktifKuruldu?(S.aktif.indexOf(t.id)>=0):(S.aktif.length?S.aktif.indexOf(t.id)>=0:true);
     ck.onchange=function(){
       var a=activeTpls().map(function(x){return x.id});
       if(ck.checked){if(a.indexOf(t.id)<0)a.push(t.id)}else a=a.filter(function(x){return x!==t.id});
       S.aktif=E.TEMPLATES.map(function(x){return x.id}).filter(function(id){return a.indexOf(id)>=0});
-      if(!S.aktif.length){S.aktif=[t.id];ck.checked=true}
+      S.aktifKuruldu=1;
+      /* hepsi kaldırılabilir — şablonsuz çalışmak meşru bir mod (Burak, 16 Eyl) */
       save();buildTplList();
     };
     var nm=document.createElement("div");nm.className="nm";nm.textContent=t.e+" "+t.n+(t.fx?" · FX: "+t.fx:"");
@@ -489,16 +743,199 @@ function buildMuzikList(){
     r.appendChild(nm);r.appendChild(sec);r.appendChild(tst);r.appendChild(sil);w.appendChild(r);
   });
 }
+/* ---------- BANT İÇERİĞİ: iki logo + 3 satır yazı ----------
+   Burak: "iki logoyu ayrı ayrı yükleyelim, yazı üç satır olsun ki
+           iki logonun arasına girebilsin." (17 Eyl 2026) */
+function parcaRenkDoldur(){
+  ["fBc1","fBc2","fBc3"].forEach(function(id){
+    var sec=$("#"+id); if(!sec||sec.childElementCount)return;
+    var o=document.createElement("option");
+    o.value=""; o.textContent="Bant yazısı rengi"; sec.appendChild(o);
+    var ad={F3EDE4:"Beyaz (sıcak)",FFFFFF:"Saf beyaz","12100E":"Siyah",F2A93B:"Altın",
+            D4D4D4:"Gümüş",E5484D:"Kırmızı","2B6CB0":"Mavi","3FA45B":"Yeşil",E86FA0:"Pembe"};
+    BANT_RENKLER.forEach(function(k){
+      var e=document.createElement("option"); e.value=k; e.textContent=ad[k]||k; sec.appendChild(e);
+    });
+  });
+}
+function parcaYaz(){
+  parcaRenkDoldur();
+  [["bl","bantSolLogo","SOL"],["br","bantSagLogo","SAĞ"]].forEach(function(x){
+    var n=$("#"+x[0]+"Info"), im=$("#"+x[0]+"Onz"), pid=String(S[x[1]]||"").trim();
+    if(!n)return;
+    n.className="note"+(pid?" ok":"");
+    n.textContent=pid?(x[2]+" logo yüklü."):(x[2]+" logo yok.");
+    if(im){ if(pid){im.src=bantGorUrl(pid);im.hidden=false} else {im.removeAttribute("src");im.hidden=true} }
+  });
+  var v=$("#fBlW"); if(v)v.value=String(S.bantSolW||250);
+  var v2=$("#fBrW"); if(v2)v2.value=String(S.bantSagW||250);
+  ["1","2","3"].forEach(function(i){
+    var t=$("#fBs"+i), c=$("#fBc"+i);
+    if(t)t.value=S["bantS"+i]||"";
+    if(c)c.value=S["bantC"+i]||"";
+  });
+  var n=$("#parcaNot"); if(!n)return;
+  if(!bantParcaVar()){ n.className="note"; n.textContent="Parçalı içerik kapalı. Bir logo yükler ya da bir satır yazarsan devreye girer ve bant kalınlığı 240 px olur."; return; }
+  var sat=["1","2","3"].map(function(i){return String(S["bantS"+i]||"").trim()}).filter(Boolean);
+  var t=[];
+  t.push("Etkin: "+(S.bantSolLogo?"sol logo":"")+(S.bantSolLogo&&S.bantSagLogo?" + ":"")+(S.bantSagLogo?"sağ logo":"")+
+         (sat.length?((S.bantSolLogo||S.bantSagLogo?" + ":"")+sat.length+" satır yazı"):""));
+  /* satır sayısı + punto banda sığıyor mu */
+  var H=240, boy=+S.bantBoy||46, sh=Math.round(1.3*boy);
+  if(sat.length*sh>H-10){
+    var yeni=Math.max(12,Math.floor((H-10)/(1.3*sat.length)));
+    t.push("⚠ "+sat.length+" satır "+boy+" puntoyla 240 px banda sığmıyor — program puntoyu "+yeni+"'ye düşürecek. Yazı boyunu küçültmen daha temiz durur.");
+  }
+  /* yazı alanı genişliği yetiyor mu */
+  var lw=S.bantSolLogo?(+S.bantSolW||250):0, rw=S.bantSagLogo?(+S.bantSagW||250):0;
+  var gen=Math.max(160,(1080-24-(rw?rw+18:0))-(24+(lw?lw+18:0)));
+  var sigar=Math.floor(gen/(0.55*boy));
+  var uzun=sat.filter(function(x){return x.length>sigar});
+  if(uzun.length)t.push("⚠ «"+uzun[0]+"» yazı alanına ("+gen+" px) sığmaz, alt satıra sarar ve hizayı bozar — kısalt ya da logoları daralt.");
+  n.className="note"+(t.length>1?" err":" ok");
+  n.textContent=t.join("  ·  ");
+}
+function parcaLogoYukle(dosya,anahtar,notId){
+  var n=$("#"+notId); n.className="note"; n.textContent="Yükleniyor…";
+  return cldUpload(dosya,"image",{folder:"booth360/_bant"}).then(function(j){
+    S[anahtar]=j.public_id;
+    if((S.bantYer||"ikisi")==="yok")S.bantYer="alt";
+    S.bantYuk=240;
+    save(); fillAdmin(); parcaYaz(); bantYaz();
+  }).catch(function(e){
+    n.className="note err"; n.textContent="Yüklenemedi: "+((e&&e.message)||"hata");
+  });
+}
+[["bl","bantSolLogo"],["br","bantSagLogo"]].forEach(function(x){
+  var k=x[0],anahtar=x[1];
+  $("#"+k+"Btn").onclick=function(){$("#"+k+"File").click()};
+  $("#"+k+"File").addEventListener("change",function(){
+    var f=this.files&&this.files[0];this.value="";if(!f)return;
+    parcaLogoYukle(f,anahtar,k+"Info");
+  });
+  $("#"+k+"Del").onclick=function(){S[anahtar]="";save();parcaYaz();bantYaz()};
+});
+$("#fBlW").addEventListener("change",function(){S.bantSolW=+this.value||250;save();parcaYaz();bantYaz()});
+$("#fBrW").addEventListener("change",function(){S.bantSagW=+this.value||250;save();parcaYaz();bantYaz()});
+["1","2","3"].forEach(function(i){
+  $("#fBs"+i).addEventListener("input",function(){
+    S["bantS"+i]=this.value;
+    if(this.value.trim()){ if((S.bantYer||"ikisi")==="yok")S.bantYer="alt"; S.bantYuk=240; }
+    save();parcaYaz();bantYaz();
+  });
+  $("#fBc"+i).addEventListener("change",function(){S["bantC"+i]=this.value;save();parcaYaz();bantYaz()});
+});
+/* ---------- BANT GÖRSELİ ----------
+   Tasarımcı 1080×240 şerit verir; şerit bandın tamamını kaplar.
+   Ölçü tutmuyorsa yüklemeyi engellemiyoruz ama net uyarıyoruz —
+   sahada gece yarısı "yükleyemedim" demesin, ne olacağını bilsin. */
+function bantGorUrl(pid){
+  return "https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/image/upload/w_540,c_limit/"+pid;
+}
+function bantGorYaz(){
+  [["bga","bantGorAlt","ALT"],["bgu","bantGorUst","ÜST"]].forEach(function(x){
+    var n=$("#"+x[0]+"Info"), im=$("#"+x[0]+"Onz"), pid=String(S[x[1]]||"").trim();
+    if(!n)return;
+    n.className="note"+(pid?" ok":"");
+    n.textContent=pid?(x[2]+" bant görseli yüklü — bu bantta yazı yerine tasarım basılır.")
+                     :(x[2]+" bant görseli yok.");
+    if(im){ if(pid){im.src=bantGorUrl(pid);im.hidden=false} else {im.removeAttribute("src");im.hidden=true} }
+  });
+}
+function bantGorYukle(dosya,anahtar,notId){
+  var n=$("#"+notId);
+  n.className="note"; n.textContent="Ölçü kontrol ediliyor…";
+  return new Promise(function(ok){
+    var im=new Image(), u=URL.createObjectURL(dosya);
+    im.onload=function(){URL.revokeObjectURL(u);ok([im.naturalWidth,im.naturalHeight])};
+    im.onerror=function(){URL.revokeObjectURL(u);ok([0,0])};
+    im.src=u;
+  }).then(function(wh){
+    var w=wh[0],h=wh[1],uy="";
+    if(w&&h){
+      if(w!==1080||h!==240){
+        var o=(w/h).toFixed(2);
+        uy=(Math.abs(w/h-4.5)<0.15)
+          ? "Ölçü "+w+"×"+h+" — standart 1080×240 değil ama oran tutuyor, ölçeklenerek basılır. "
+          : "⚠ Ölçü "+w+"×"+h+" (oran "+o+"). Standart 1080×240 (oran 4,50). Bant, şeridi doldurmak için kenarlardan kırpacak. ";
+      }
+    }
+    n.textContent=uy+"Yükleniyor…";
+    return cldUpload(dosya,"image",{folder:"booth360/_bant"}).then(function(j){
+      S[anahtar]=j.public_id; save(); bantGorYaz(); bantYaz();
+      if(uy){var nn=$("#"+notId);nn.className="note err";nn.textContent=uy+"Yüklendi: "+j.public_id}
+    });
+  }).catch(function(e){
+    n.className="note err"; n.textContent="Yüklenemedi: "+((e&&e.message)||"hata");
+  });
+}
+[["bga","bantGorAlt"],["bgu","bantGorUst"]].forEach(function(x){
+  var k=x[0],anahtar=x[1];
+  $("#"+k+"Btn").onclick=function(){$("#"+k+"File").click()};
+  $("#"+k+"File").addEventListener("change",function(){
+    var f=this.files&&this.files[0];this.value="";if(!f)return;
+    bantGorYukle(f,anahtar,k+"Info");
+  });
+  $("#"+k+"Del").onclick=function(){S[anahtar]="";save();bantGorYaz();bantYaz()};
+});
 /* logo */
-function logoInfo(){var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");n.textContent=S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok — videoya logo binmez."}
+function logoInfo(){
+  var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");
+  if(!S.logoPid){n.textContent="Logo yok — videoya logo binmez.";return}
+  var ek=(S.logoPoz==="dalt")?" · ALT BANDI TAMAMEN KAPLIYOR":
+         (S.logoPoz==="dust")?" · ÜST BANDI TAMAMEN KAPLIYOR":"";
+  n.textContent="Logo yüklü: "+S.logoPid+ek;
+}
 $("#logoBtn").onclick=function(){$("#logoFile").click()};
+/* Yüklenen dosya GENİŞ BİR ŞERİT mi (1080×240 = 4,5:1; eşik 2,5)?
+   Öyleyse bu bir köşe logosu değil, bant tasarımıdır — konumu kendimiz seçeriz.
+   Burak sahada "yine aynı" dedi çünkü konum listesinde "Alt orta" kalmıştı ve
+   şerit %30 genişlikte, bandın ortasında minik basıldı. Ayar aratmayalım. */
+function olcuOku(dosya){
+  return new Promise(function(ok){
+    var im=new Image(), u=URL.createObjectURL(dosya);
+    im.onload=function(){URL.revokeObjectURL(u);ok([im.naturalWidth,im.naturalHeight])};
+    im.onerror=function(){URL.revokeObjectURL(u);ok([0,0])};
+    im.src=u;
+  });
+}
 $("#logoFile").addEventListener("change",function(){
   var f=this.files&&this.files[0];this.value="";if(!f)return;
   var n=$("#logoInfo");n.className="note";n.textContent="Logo yükleniyor…";
-  cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){S.logoPid=j.public_id;save();logoInfo();logoZorNot()})
-    .catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
+  olcuOku(f).then(function(wh){
+    var w=wh[0],h=wh[1],oran=(w&&h)?(w/h):0, serit=(oran>=2.5);
+    return cldUpload(f,"image",{folder:"booth360/_logo"}).then(function(j){
+      S.logoPid=j.public_id;
+      var bilgi="";
+      if(serit){
+        /* şerit: bandı tamamen kaplat, bant düzenini ve kalınlığını da hazırla */
+        S.logoPoz="dalt";
+        if((S.bantYer||"ikisi")==="yok")S.bantYer="alt";
+        S.bantYuk=240;
+        S.logoZorunlu=1;
+        bilgi=" · ŞERİT TASARIM algılandı ("+w+"×"+h+", oran "+oran.toFixed(2)+
+              ") — alt bandı tamamen kaplayacak şekilde ayarlandı.";
+      }
+      save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+      if(serit){var nn=$("#logoInfo");nn.className="note ok";nn.textContent="Logo yüklü: "+j.public_id+bilgi}
+    });
+  }).catch(function(e){n.className="note err";n.textContent="Logo yüklenemedi: "+((e&&e.message)||"hata")});
 });
 $("#logoDel").onclick=function(){S.logoPid="";save();logoInfo();logoZorNot()};
+/* Oran tahminine güvenme: tek dokunuşla da seçilsin.
+   17 Eyl — Burak 3:1'lik bir dosya yükledi, eşik tutmadı, yine köşeye bastı. */
+$("#logoBant").onclick=function(){
+  S.logoPoz="dalt";
+  if((S.bantYer||"ikisi")==="yok")S.bantYer="alt";
+  S.bantYuk=240; S.logoZorunlu=1;
+  save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+  var n=$("#logoInfo"); n.className="note ok";
+  n.textContent=(S.logoPid?("Logo yüklü: "+S.logoPid):"Logo yok")+" · ALT BANDI TAMAMEN KAPLIYOR — dosya 1080×240 değilse üst/alttan kırpılır.";
+};
+$("#logoKose").onclick=function(){
+  if(S.logoPoz==="dalt"||S.logoPoz==="dust"||S.logoPoz==="balt"||S.logoPoz==="bust")S.logoPoz="ne";
+  save(); fillAdmin(); logoInfo(); logoZorNot(); bantYaz();
+};
 /* FX */
 function fxInfo(){
   var n=$("#fxInfo"),h=Object.keys(S.fxHave||{});
@@ -561,7 +998,10 @@ function beginRec(){
   mesgul=true;go("rec");
   $("#count").textContent="";$("#recBadge").style.display="none";
   var fm=(S.kamera==="environment")?"environment":"user",wide=(S.kadraj!=="standart");
-  $("#cam").classList.toggle("mirror",fm==="user"); /* ön kamera önizlemesi ayna gibi; kayıt aynalanmaz */
+  /* AYNALAMA: MediaRecorder CSS'i değil AKIŞI kaydeder — önizlemeyi aynalarsak teslim
+     edilen video aynalanmaz ve çekim biter bitmez görüntü ters dönmüş gibi gelir.
+     (İrem, 16 Eyl 2026 saha notu.) Varsayılan KAPALI: ekranda ne varsa videoda o. */
+  $("#cam").classList.toggle("mirror",fm==="user"&&!!S.ayna);
   $("#cam").style.objectFit="cover"; /* önizleme tam ekran */
   var cands=tumCands(fm,wide),key=fm+"|"+(wide?"w":"s")+(S.hizKare?"|h":""),log=[],best=null,i=0;
   var pick=(S.camPick&&S.camPick[key]);
@@ -680,16 +1120,39 @@ function uploadVideo(blobIn,deneme){
       bekleyen=null;
       curVid={pid:j.public_id,ver:j.version,dur:+j.duration||S.sure};
       $("#upBar").style.width="100%";mesgul=false;recBusy=false;
-      if(paketOf()==="editsiz"){ /* editsiz: şablon yok, ham video doğrudan karekoda */
-        selTpl={id:"ham",n:"Ham video",e:"🎥"};
-        lastUrl=tplUrl("ham");lastPage=pageUrl("ham");
-        $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
-        if(!S.deneme)sayacArt("teslim");drawQR(S.qrMod==="mp4"?lastUrl:lastPage);go("done");return;
-      }
       muzikAcik=!!(S.muzikSec||Object.keys(S.tplMusic).length);
-      if(S.warm)warm(activeTpls()[0].id);
+      var akt=activeTpls();
+      /* DOĞRUDAN TESLİM: misafire şablon seçtirme, karekodu hemen ver.
+         Editsiz pakette, hiç şablon işaretli değilse ya da S.direkt açıkken bu yol işler. */
+      if(paketOf()==="editsiz"||!akt.length||S.direkt){
+        var tid=(paketOf()==="editsiz"||!akt.length)?"ham":akt[0].id;
+        selTpl=(tid==="ham")?{id:"ham",n:"Ham video",e:"🎥"}:akt[0];
+        teslimEt(tid);return;
+      }
+      if(S.warm)warm(akt[0].id);
       buildStyleGrid();go("style");
     }).catch(function(e){upFail((e&&e.message)||"yanıt okunamadı",deneme)});
+}
+/* Tek teslim yolu: şablonu uygula, karekodu çiz, bitti ekranına git. */
+function teslimEt(tid){
+  lastUrl=tplUrl(tid);lastPage=pageUrl(tid);
+  $("#doneNote").textContent=S.qrMod==="mp4"
+    ? "Kamerayı karekoda tut, videon telefonuna insin."
+    : "Kamerayı karekoda tut — sayfa açılır: kaydet ya da paylaş.";
+  if(!S.deneme)sayacArt("teslim");
+  /* KAREKOD OKUNABİLİRLİĞİ: mp4 modunda karekod tüm dönüşüm zincirini taşır.
+     Bant yazısı + logo + müzik katmanlarıyla adres 800+ karaktere çıkıyor ve
+     telefon kamerası karekodu okuyamıyor. Uzunsa sessizce sayfa moduna düş —
+     misafirin karekodu okuyamaması en kötü sonuç. (qrtest, 16 Eyl 2026) */
+  var hedef=(S.qrMod==="mp4")?lastUrl:lastPage;
+  if(S.qrMod==="mp4"&&hedef&&hedef.length>480&&lastPage){
+    hedef=lastPage;
+    $("#doneNote").textContent="Kamerayı karekoda tut — sayfa açılır: kaydet ya da paylaş.";
+  }
+  qrHedef=hedef;
+  drawQR(hedef);
+  otherGoster();
+  go("done");
 }
 function upFail(m,deneme){
   if(deneme<3){ /* internet bir an gittiyse kendi kendine tekrar dener */
@@ -708,13 +1171,15 @@ $("#upVazgec").onclick=function(){bekleyen=null;mesgul=false;recBusy=false;go("a
 var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
-  if(tid==="ham")return {c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
+  var bant=bantAlan(),bantli=!!(bant.bu||bant.ba||bant.bga||bant.bgu||bant.bl||bant.br||bant.b1||bant.b2||bant.b3);
+  if(tid==="ham")return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
     l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,
-    k:logoVar()?kKodu():"",              /* logo basılmıyorsa videoya hiç dokunulmaz */
-    o:Object.assign({},S.flags,{logo:1})};
-  return {c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
+    /* logo da bant yazısı da yoksa videoya HİÇ dokunulmaz — sıfır kredi, anında hazır */
+    k:(logoVar()||bantli)?kKodu():"",
+    o:Object.assign({},S.flags,{logo:1})},bant);
+  return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
     l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
-    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})};
+    x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})},bant);
 }
 /* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
 function fxProbe(cb){
@@ -805,15 +1270,11 @@ function openPreview(t){
     stat.textContent=(e&&e.message)||"";
   });
 }
+/* doğrudan teslimde misafir şablon değiştiremez */
+function otherGoster(){var b=$("#otherBtn");if(b)b.hidden=!!S.direkt||paketOf()==="editsiz"||!activeTpls().length}
 $("#otherBtn").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}go("style")};
-$("#useBtn").onclick=function(){
-  if(!selTpl)return;
-  lastUrl=tplUrl(selTpl.id);lastPage=pageUrl(selTpl.id);
-  var q=S.qrMod==="mp4"?lastUrl:lastPage;
-  $("#doneNote").textContent=S.qrMod==="mp4"?"Kamerayı karekoda tut, videon telefonuna insin.":"Kamerayı karekoda tut — sayfa açılır: izle, kaydet, paylaş.";
-  if(!S.deneme)sayacArt("teslim");drawQR(q);
-  go("done");
-};
+/* tek teslim yolu — karekod uzunluk koruması burada da geçerli olsun */
+$("#useBtn").onclick=function(){ if(selTpl)teslimEt(selTpl.id) };
 $("#yenidenBtn").onclick=function(){curVid=null;go("attract")};
 $("#styleBasa").onclick=function(){curVid=null;go("attract")};
 $("#prevBasa").onclick=function(){prevTok++;$("#prevVid").removeAttribute("src");try{$("#prevVid").load()}catch(e){}curVid=null;go("attract")};
@@ -881,8 +1342,8 @@ function drawQR(text){
 
 window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl,pageUrl:pageUrl,ready:ready,go:go,
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
-  last:function(){return {url:lastUrl,page:lastPage}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
+  last:function(){return {url:lastUrl,page:lastPage,qr:qrHedef}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,parcaYaz:parcaYaz,bantParcaVar:bantParcaVar,bantGorVar:bantGorVar,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,onizleYaz:onizleYaz,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
