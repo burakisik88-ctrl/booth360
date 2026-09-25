@@ -176,6 +176,73 @@ with sync_playwright() as p:
     }""")
     T("2:1 normal logo şerit SAYILMIYOR", r.get("poz")=="ne", r)
 
+    print("\n[9] TAM EKRAN ÇERÇEVE (tasarımcının 1080×1920 saydam PNG'si)")
+    BAZC = "{c:'rq',p:'booth360/ev/abc',v:1,t:'ham',bh:170,bp:'ikisi',ba:'ALT YAZI',l:'booth360/_logo/yopi',cf:'booth360/_cerceve/tubid'}"
+    z = pg.evaluate("()=>B360E.url(%s)" % BAZC).split("/upload/")[1]
+    T("çerçeve katmanı videonun üstüne biniyor",
+      "l_booth360:_cerceve:tubid/c_scale,w_1080,h_1920/fl_layer_apply,g_center" in z, z[:96])
+    T("çerçeve varken video TAM EKRAN (bant geometrisi devre dışı)",
+      z.startswith("c_fill,w_1080,h_1920,g_center"), z[:34])
+    T("çerçeve varken bant yazısı basılmıyor", "l_text" not in z, z[:60])
+    T("çerçeve varken köşe logosu basılmıyor", "_logo" not in z, z[:60])
+    T("çerçeve zincirin SONUNDA — her katmanın üstünde",
+      z.split("/q_auto")[0].endswith("fl_layer_apply,g_center"), z.split("/q_auto")[0][-46:])
+    us = pg.evaluate("()=>B360E.url(Object.assign(%s,{t:'yildiz',d:15,r:10,f:0}))" % BAZC)
+    T("şablonlu videoda da çerçeve en üstte",
+      us.split("/q_auto")[0].endswith("l_booth360:_cerceve:tubid/c_scale,w_1080,h_1920/fl_layer_apply,g_center"),
+      us.split("/q_auto")[0][-60:])
+    T("şablonun hız/kesim zinciri bozulmuyor", ",fl_splice/" in us)
+    u0 = pg.evaluate("()=>B360E.url(Object.assign(%s,{cf:''}))" % BAZC)
+    T("çerçevesizken bant yazısı ve logo eskisi gibi basılıyor", "l_text" in u0 and "_logo" in u0, u0[-60:])
+    T("çerçeve ham videoyu işleme sokuyor",
+      pg.evaluate("()=>B360E.hamIslem({t:'ham',cf:'booth360/_cerceve/x'})") is True)
+    T("çerçeve de logo da yoksa ham video hiç işlenmiyor",
+      pg.evaluate("()=>B360E.hamIslem({t:'ham'})") is False)
+    T("çerçeve karekod adresine giriyor (misafir sayfası aynı kareyi kurar)",
+      pg.evaluate("()=>B360E.decode(B360E.encode(%s)).cf" % BAZC) == "booth360/_cerceve/tubid")
+
+    print("\n[9b] Panel — çerçeve yükleme ve saydamlık denetimi")
+    T("panelde çerçeve yükleme düğmesi var", pg.locator("#cerBtn").count() == 1)
+    r = pg.evaluate("""()=>{
+      const B=B360; B.S.cerceve=""; B.save();
+      const c=document.createElement("canvas"); c.width=1080; c.height=1920;
+      const x=c.getContext("2d"); x.fillStyle="#C2185B"; x.fillRect(0,0,1080,1920);
+      x.clearRect(30,230,1020,1497);                       /* saydam pencere */
+      return new Promise(ok=>c.toBlob(b=>{
+        const f=new File([b],"cerceve.png",{type:"image/png"});
+        const dt=new DataTransfer(); dt.items.add(f);
+        const inp=document.querySelector("#cerFile");
+        inp.files=dt.files; inp.dispatchEvent(new Event("change",{bubbles:true}));
+        setTimeout(()=>ok({pid:B.S.cerceve,not:(document.querySelector("#cerInfo")||{}).textContent||"",
+                           onz:!document.querySelector("#cerOnz").hidden}),3000);
+      },"image/png"));
+    }""")
+    T("ortası saydam çerçeve yükleniyor", bool(r.get("pid")), str(r.get("pid")))
+    T("panel pencere ölçüsünü yazıyor", "pencere" in r.get("not", ""), r.get("not", "")[:90])
+    T("panel bant/logo basılmayacağını söylüyor", "girmez" in r.get("not", ""), r.get("not", "")[-60:])
+    T("çerçeve önizlemesi görünüyor", r.get("onz") is True)
+    T("bant notunda da çerçeve uyarısı var",
+      "ÇERÇEVE açık" in pg.evaluate("()=>document.querySelector('#bantNot').textContent"),
+      pg.evaluate("()=>document.querySelector('#bantNot').textContent")[:80])
+    r2 = pg.evaluate("""()=>{
+      const B=B360; B.S.cerceve=""; B.save();
+      const c=document.createElement("canvas"); c.width=1080; c.height=1920;
+      const x=c.getContext("2d"); x.fillStyle="#C2185B"; x.fillRect(0,0,1080,1920);   /* saydam yok */
+      return new Promise(ok=>c.toBlob(b=>{
+        const f=new File([b],"kapali.png",{type:"image/png"});
+        const dt=new DataTransfer(); dt.items.add(f);
+        const inp=document.querySelector("#cerFile");
+        inp.files=dt.files; inp.dispatchEvent(new Event("change",{bubbles:true}));
+        setTimeout(()=>ok({pid:B.S.cerceve,not:(document.querySelector("#cerInfo")||{}).textContent||""}),3000);
+      },"image/png"));
+    }""")
+    T("ortası KAPALI dosya yüklenmiyor (video kararmasın)", not r2.get("pid"), str(r2.get("pid")))
+    T("neden yüklenmediği açıkça yazıyor", "SAYDAM DE" in r2.get("not", ""), r2.get("not", "")[:90])
+    r3 = pg.evaluate("""()=>{B360.S.cerceve='booth360/_cerceve/x';B360.save();
+        document.querySelector('#cerDel').click();
+        return {pid:B360.S.cerceve,onz:document.querySelector('#cerOnz').hidden}}""")
+    T("Kaldır düğmesi çerçeveyi siliyor", r3.get("pid") == "" and r3.get("onz") is True, str(r3))
+
     print("\n[8] Sayfa hatası yok")
     T("JS hatası yok", not errs, errs)
     b.close()
