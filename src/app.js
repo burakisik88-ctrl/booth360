@@ -1,6 +1,6 @@
 (function(){
 "use strict";
-var VER="v0.9.5";
+var VER="v0.9.6";
 var E=B360E;
 function $(s){return document.querySelector(s)}
 var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",camPick:{},mod:"editli",paket:"efektli",siteUrl:"",cldName:"rqhgtbvd",cldPreset:"booth_qr",muzikler:[],muzikSec:"",
@@ -13,7 +13,7 @@ var DEF={evt:"",sure:15,kamera:"user",kadraj:"genis916d",lastCam:"",camLog:"",ca
   bantUstMod:"yok", bantUstTxt:"", bantAltMod:"yok", bantAltTxt:"",
   bantRenk:"F3EDE4", bantBoy:46, bantY:92, bantFont:"Montserrat", ayna:0,
   bantYer:"ikisi", bantYuk:170, bantZemin:"0D0B0A", bantKaydir:0, direkt:1,
-  bantGorAlt:"", bantGorUst:"",
+  bantGorAlt:"", bantGorUst:"", cerceve:"",
   bantSolLogo:"", bantSagLogo:"", bantSolW:250, bantSagW:250,
   bantS1:"", bantS2:"", bantS3:"", bantC1:"", bantC2:"", bantC3:"",
   yonerge:"Kola bak, gülümse — kol yanından geçerken poz ver!"};
@@ -384,7 +384,7 @@ function fillAdmin(){
   $("#fBantYer").value=S.bantYer||"ikisi";
   $("#fBantZemin").value=S.bantZemin||"0D0B0A";
   $("#fBantYuk").value=String(S.bantYuk||170);
-  bantGorYaz(); parcaYaz();
+  bantGorYaz(); parcaYaz(); cerceveYaz();
   $("#fBantFont").value=S.bantFont||"Montserrat";
   $("#fBantKaydir").value=+S.bantKaydir||0;
   $("#fDirekt").value=S.direkt?"1":"0";
@@ -560,6 +560,7 @@ function bantYaz(){
   else t.push("Düzen: "+({ikisi:"alt + üst",alt:"sadece alt",ust:"sadece üst"}[yer])+" · "+(+S.bantYuk||170)+" px");
   if(yer==="alt"&&ust)t.push("⚠ Düzen «sadece alt» — ÜST yazı videoda çıkmaz.");
   if(yer==="ust"&&alt)t.push("⚠ Düzen «sadece üst» — ALT yazı videoda çıkmaz.");
+  if(String(S.cerceve||"").trim())t.push("⚠ TAM EKRAN ÇERÇEVE açık — video tam ekran basılır; bu moddaki hiçbir bant yazısı/görseli ve köşe logosu videoya GİRMEZ.");
   if(bantParcaVar())t.push("Bant içeriği: iki logo + satır yazı (düz bant yazısının yerine geçer)");
   if(String(S.bantGorAlt||"").trim())t.push("ALT bant: tasarım görseli (yazı yerine görsel basılır)");
   if(String(S.bantGorUst||"").trim())t.push("ÜST bant: tasarım görseli");
@@ -878,6 +879,83 @@ function bantGorYukle(dosya,anahtar,notId){
   });
   $("#"+k+"Del").onclick=function(){S[anahtar]="";save();bantGorYaz();bantYaz()};
 });
+/* ---------- TAM EKRAN ÇERÇEVE ----------
+   1080×1920 PNG, ortası SAYDAM. Video tam ekran kalır, çerçeve üstüne biner;
+   misafir saydam pencereden görünür. Çerçeve açıkken bant yazısı ve köşe logosu
+   basılmaz — ikisi de çerçevenin altında kalırdı.
+   Saydamlık PANELDE ölçülür: ortası kapalı bir dosya sahada videoyu tamamen
+   karartır, bunu gece yarısı değil burada söylemek lazım. */
+function cerceveUrl(pid){
+  return "https://res.cloudinary.com/"+encodeURIComponent(S.cldName)+"/image/upload/w_360,c_limit/"+pid;
+}
+function cerceveYaz(){
+  var n=$("#cerInfo"), im=$("#cerOnz"), pid=String(S.cerceve||"").trim();
+  if(n){
+    n.className="note"+(pid?" ok":"");
+    n.textContent=pid?("Çerçeve yüklü — video tam ekran basılır, bant yazısı ve köşe logosu bu modda VİDEOYA GİRMEZ.")
+                     :("Çerçeve yok. 1080×1920, ortası saydam PNG yükleyebilirsin.");
+  }
+  if(im){ if(pid){im.src=cerceveUrl(pid);im.hidden=false} else {im.removeAttribute("src");im.hidden=true} }
+  try{bantYaz()}catch(e){}
+}
+/* dosyayı panelde ölç: ölçü + saydam pencere kutusu */
+function cerceveOlc(dosya){
+  return new Promise(function(ok){
+    var im=new Image(), u=URL.createObjectURL(dosya);
+    im.onload=function(){
+      URL.revokeObjectURL(u);
+      var w=im.naturalWidth,h=im.naturalHeight;
+      try{
+        var k=Math.min(1,200/Math.max(w,h)),c=document.createElement("canvas");
+        c.width=Math.max(1,Math.round(w*k));c.height=Math.max(1,Math.round(h*k));
+        var x=c.getContext("2d",{willReadFrequently:true});x.drawImage(im,0,0,c.width,c.height);
+        var d=x.getImageData(0,0,c.width,c.height).data;
+        var n=0,tp=0,x0=c.width,y0=c.height,x1=-1,y1=-1;
+        for(var yy=0;yy<c.height;yy++)for(var xx=0;xx<c.width;xx++){
+          tp++; if(d[(yy*c.width+xx)*4+3]<20){n++;
+            if(xx<x0)x0=xx; if(yy<y0)y0=yy; if(xx>x1)x1=xx; if(yy>y1)y1=yy;}
+        }
+        ok({w:w,h:h,oran:n/tp,pencere:(x1>=0)?{x:Math.round(x0/k),y:Math.round(y0/k),
+            w:Math.round((x1-x0+1)/k),h:Math.round((y1-y0+1)/k)}:null});
+      }catch(e){ok({w:w,h:h,oran:-1,pencere:null})}
+    };
+    im.onerror=function(){URL.revokeObjectURL(u);ok({w:0,h:0,oran:-1,pencere:null})};
+    im.src=u;
+  });
+}
+function cerceveYukle(dosya){
+  var n=$("#cerInfo"); n.className="note"; n.textContent="Dosya ölçülüyor…";
+  return cerceveOlc(dosya).then(function(m){
+    if(m.oran===0||!m.pencere){
+      n.className="note err";
+      n.textContent="⚠ Bu dosyanın ortası SAYDAM DEĞİL — çerçeve videoyu tamamen kapatır, misafir hiçbir şey görmez. Tasarımcıdan ortası boş (saydam) PNG iste. Yükleme yapılmadı.";
+      return;
+    }
+    var uy="";
+    if(m.w&&m.h&&Math.abs(m.w/m.h-9/16)>0.02)
+      uy="⚠ Ölçü "+m.w+"×"+m.h+" — standart 1080×1920 (9:16) değil, çerçeve tuvale esnetilerek basılır. ";
+    else if(m.w&&m.w!==1080)
+      uy="Ölçü "+m.w+"×"+m.h+" — oran doğru, 1080×1920'ye ölçeklenir. ";
+    if(m.oran>0&&m.oran<0.25)
+      uy+="⚠ Saydam pencere çok küçük (tuvalin %"+Math.round(m.oran*100)+"'i) — misafir dar bir aralıktan görünür. ";
+    n.textContent=uy+"Yükleniyor…";
+    return cldUpload(dosya,"image",{folder:"booth360/_cerceve"}).then(function(j){
+      S.cerceve=j.public_id; save(); cerceveYaz();
+      var nn=$("#cerInfo");
+      nn.className="note"+(uy?" err":" ok");
+      nn.textContent=uy+"Çerçeve yüklendi ("+m.w+"×"+m.h+", pencere "+m.pencere.w+"×"+m.pencere.h+
+        ") — video tam ekran basılır, bant yazısı ve köşe logosu bu modda videoya girmez.";
+    });
+  }).catch(function(e){
+    n.className="note err"; n.textContent="Yüklenemedi: "+((e&&e.message)||"hata");
+  });
+}
+$("#cerBtn").onclick=function(){$("#cerFile").click()};
+$("#cerFile").addEventListener("change",function(){
+  var f=this.files&&this.files[0];this.value="";if(!f)return;
+  cerceveYukle(f);
+});
+$("#cerDel").onclick=function(){S.cerceve="";save();cerceveYaz()};
 /* logo */
 function logoInfo(){
   var n=$("#logoInfo");n.className="note"+(S.logoPid?" ok":"");
@@ -1172,13 +1250,14 @@ var muzikAcik=false,selTpl=null,lastUrl="",lastPage="";
 function mkSpec(tid,vid){
   var v=vid||curVid;if(!v)return null;
   var bant=bantAlan(),bantli=!!(bant.bu||bant.ba||bant.bga||bant.bgu||bant.bl||bant.br||bant.b1||bant.b2||bant.b3);
+  var cf=String(S.cerceve||"").trim();
   if(tid==="ham")return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:"ham",d:v.dur,
-    l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,
-    /* logo da bant yazısı da yoksa videoya HİÇ dokunulmaz — sıfır kredi, anında hazır */
-    k:(logoVar()||bantli)?kKodu():"",
+    l:logoVar()?S.logoPid:"",lp:S.logoPoz,lw:S.logoW,cf:cf,
+    /* logo, bant yazısı ve çerçeve yoksa videoya HİÇ dokunulmaz — sıfır kredi, anında hazır */
+    k:(logoVar()||bantli||cf)?kKodu():"",
     o:Object.assign({},S.flags,{logo:1})},bant);
   return Object.assign({c:S.cldName,p:v.pid,v:v.ver,t:tid,d:v.dur,f:S.yuzSn,r:S.turSn,
-    l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",
+    l:S.logoPid||"",lp:S.logoPoz,lw:S.logoW,m:muzikAcik?musicFor(tid):"",cf:cf,
     x:fxOk(tid)?S.fxMode:"off",fp:S.fxPath,k:kKodu(),o:Object.assign({},S.flags,{tol:S.fxTol})},bant);
 }
 /* FX varlıkları bulutta var mı? (başka cihazdan yüklenmiş olabilir) — HEAD ile yoklanır, S.fxHave'e yazılır */
@@ -1344,6 +1423,6 @@ window.B360={VER:VER,S:S,save:save,evSlug:evSlug,E:E,mkSpec:mkSpec,tplUrl:tplUrl
   setVid:function(v){curVid=v},muzik:function(a){muzikAcik=a},buildStyleGrid:buildStyleGrid,openPreview:openPreview,
   last:function(){return {url:lastUrl,page:lastPage,qr:qrHedef}},fillAdmin:fillAdmin,keepBlob:keepBlob,openCal:openCal,
   galeriUrl:galeriUrl,raporUrl:raporUrl,sayacMetin:sayacMetin,bulutSayim:bulutSayim,paketOf:paketOf,pageBase:pageBase,
-  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,parcaYaz:parcaYaz,bantParcaVar:bantParcaVar,bantGorVar:bantGorVar,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,onizleYaz:onizleYaz,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
+  maliyetMetin:maliyetMetin,ayarKod:ayarKod,ayarBag:ayarBag,ayarUygula:ayarUygula,snTl:snTl,PINK:PINK,kKodu:kKodu,logoVar:logoVar,bayatAd:bayatAd,bantMetin:bantMetin,bantAlan:bantAlan,bantUyari:bantUyari,tasmaUyari:tasmaUyari,bantRenkYaz:bantRenkYaz,BANT_RENKLER:BANT_RENKLER,parcaYaz:parcaYaz,bantParcaVar:bantParcaVar,bantGorVar:bantGorVar,cerceveYaz:cerceveYaz,cerceveOlc:cerceveOlc,cerceveYukle:cerceveYukle,markaRenkYaz:markaRenkYaz,teslimEt:teslimEt,onizleYaz:onizleYaz,camCands:camCands,tumCands:tumCands,isoGun:isoGun,applyBrand:applyBrand,
   tani:function(){return {ekran:cur,mesgul:mesgul,bekleyen:!!bekleyen,sayac:S.sayac||{},oto:+S.otoDon||0,ayarGeldi:AYAR_GELDI,deneme:!!S.deneme}}};
 })();
